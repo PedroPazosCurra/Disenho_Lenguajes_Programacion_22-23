@@ -1,43 +1,41 @@
-Diseño de Lenguajes de Programación: Memoria
+Programming Languages Design: Memory
 
--Manual de usuario
-Ilustración (formal y
-con ejemplos de ejecución) de las nuevas funcionalidades del intérprete
-
+-User Manual
+Formal exposition with execution samples of new interpreter functionalities.
 
 
 
--Manual Técnico
-Qué módulos de las implementaciones originales han sido
-modificados y qué tipo de cambios se han realizado sobre ellos para lograr implementar esas
-nuevas funcionalidades
 
-1.1: Reconocimiento de expresiones multi-línea
+-Technical Manual
+Wich modules from the original code have been changed and what type of adjustements have been made to achieve the implementation of the new functionalities
+
+
+1.1: Multi-line expressions recognition
 
   A
 
 
 1.2: "Pretty-printer"
 
-2.1: Implementación de punto fijo interno
+2.1: Internal fixed point implementation
 
-2.2: Contexto de definiciones globales
+2.2: Global definition context
 
-2.3: Tipo string
+2.3: String type
 
-2.4: Tipo pares
+2.4: Pair type
 
-2.5: Tipo tupla
+2.5: Tuple type
 
-2.6: Registros
+2.6: Registers
 
-2.7: Listas
+2.7: Lists
 
-2.8: Subtipado
+2.8: Subtyping
 
-2.9: Tipo Unit
+2.9: Unit type
 
-2.10: Operaciones de Entrada/Salida
+2.10: I/O Operations
 
 
 
