@@ -4,7 +4,41 @@ Diseño de Lenguajes de Programación: Memoria
 Ilustración (formal y
 con ejemplos de ejecución) de las nuevas funcionalidades del intérprete
 
+
+
+
 -Manual Técnico
 Qué módulos de las implementaciones originales han sido
 modificados y qué tipo de cambios se han realizado sobre ellos para lograr implementar esas
 nuevas funcionalidades
+
+1.1: Reconocimiento de expresiones multi-línea
+
+  A
+
+
+1.2: "Pretty-printer"
+
+2.1: Implementación de punto fijo interno
+
+2.2: Contexto de definiciones globales
+
+2.3: Tipo string
+
+2.4: Tipo pares
+
+2.5: Tipo tupla
+
+2.6: Registros
+
+2.7: Listas
+
+2.8: Subtipado
+
+2.9: Tipo Unit
+
+2.10: Operaciones de Entrada/Salida
+
+
+
+
