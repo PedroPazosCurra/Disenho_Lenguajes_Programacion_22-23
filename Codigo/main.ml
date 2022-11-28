@@ -6,6 +6,8 @@ open Lambda;;
 open Parser;;
 open Lexer;;
 
+(* Bucle iterativo superior de la interfaz *)
+
 let top_level_loop () =
   print_endline "Evaluator of lambda expressions...";
   let rec loop ctx =
@@ -18,20 +20,19 @@ let top_level_loop () =
       loop ctx
     with
        Lexical_error ->
-         print_endline "lexical error";
+         print_endline "Lexical error";
          loop ctx
      | Parse_error ->
-         print_endline "syntax error";
+         print_endline "Syntax error";
          loop ctx
      | Type_error e ->
-         print_endline ("type error: " ^ e);
+         print_endline ("Type error: " ^ e);
          loop ctx
      | End_of_file ->
-         print_endline "...bye!!!"
+         print_endline "Farewell!"
   in
     loop emptyctx
   ;;
 
-top_level_loop ()
-;;
+top_level_loop () ;;
 
