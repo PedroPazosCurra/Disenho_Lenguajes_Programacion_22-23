@@ -7,8 +7,8 @@ type ty =
   | TyArr of ty * ty
 ;;
 
-type context =
-  (string * ty) list
+type a' context =
+  (string * 'a) list
 ;;
 
 type term =
@@ -23,7 +23,12 @@ type term =
   | TmAbs of string * ty * term
   | TmApp of term * term
   | TmLetIn of string * term * term
+  | TmFix of term
 ;;
+
+type comando =
+    Eval of term
+  | Bind of string * term
 
 
 (* CONTEXT MANAGEMENT *)
@@ -110,14 +115,24 @@ let rec typeof ctx tm = match tm with
       (match tyT1 with
            TyArr (tyT11, tyT12) ->
              if tyT2 = tyT11 then tyT12
-             else raise (Type_error "parameter type mismatch")
-         | _ -> raise (Type_error "arrow type expected"))
+             else raise (Type_error "Parameter type mismatch")
+         | _ -> raise (Type_error "Arrow type expected"))
 
     (* T-Let *)
   | TmLetIn (x, t1, t2) ->
       let tyT1 = typeof ctx t1 in
       let ctx' = addbinding ctx x tyT1 in
       typeof ctx' t2
+      
+      (* T-Fix *)
+  | TmFix t1 ->
+        let tyT1 = typeof ctx t1 in
+        (match tyT1 with
+            TyArr (tyT11, tyT12) ->
+                if tyT11 = tyT12 then tyT12
+                else raise (Type_error "Body result is not compatible with domain")
+            | _ -> raise (Type_error "Arrow type expected")
+         )
 ;;
 
 
@@ -152,6 +167,8 @@ let rec string_of_term = function
       "(" ^ string_of_term t1 ^ " " ^ string_of_term t2 ^ ")"
   | TmLetIn (s, t1, t2) ->
       "let " ^ s ^ " = " ^ string_of_term t1 ^ " in " ^ string_of_term t2
+  | TmFix termino ->
+      "(fix " ^ string_of_term termino ^ ")" 
 ;;
 
 let rec ldif l1 l2 = match l1 with
@@ -187,6 +204,8 @@ let rec free_vars tm = match tm with
       lunion (free_vars t1) (free_vars t2)
   | TmLetIn (s, t1, t2) ->
       lunion (ldif (free_vars t2) [s]) (free_vars t1)
+  | TmFix termino ->
+      free_vars termino
 ;;
 
 let rec fresh_name x l =
@@ -226,6 +245,8 @@ let rec subst x s tm = match tm with
            then TmLetIn (y, subst x s t1, subst x s t2)
            else let z = fresh_name y (free_vars t2 @ fvs) in
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
+  | TmFix t ->
+       TmFix (subst x s t)
 ;;
 
 let rec isnumericval tm = match tm with
@@ -245,7 +266,7 @@ let rec isval tm = match tm with
 exception NoRuleApplies
 ;;
 
-let rec eval1 tm = match tm with
+let rec eval1 vctx tm = match tm with
     (* E-IfTrue *)
     TmIf (TmTrue, t2, _) ->
       t2
@@ -256,12 +277,12 @@ let rec eval1 tm = match tm with
 
     (* E-If *)
   | TmIf (t1, t2, t3) ->
-      let t1' = eval1 t1 in
+      let t1' = eval1 vctx t1 in
       TmIf (t1', t2, t3)
 
     (* E-Succ *)
   | TmSucc t1 ->
-      let t1' = eval1 t1 in
+      let t1' = eval1 vctx t1 in
       TmSucc t1'
 
     (* E-PredZero *)
@@ -274,7 +295,7 @@ let rec eval1 tm = match tm with
 
     (* E-Pred *)
   | TmPred t1 ->
-      let t1' = eval1 t1 in
+      let t1' = eval1 vctx t1 in
       TmPred t1'
 
     (* E-IszeroZero *)
@@ -287,7 +308,7 @@ let rec eval1 tm = match tm with
 
     (* E-Iszero *)
   | TmIsZero t1 ->
-      let t1' = eval1 t1 in
+      let t1' = eval1 vctx t1 in
       TmIsZero t1'
 
     (* E-AppAbs *)
@@ -296,12 +317,12 @@ let rec eval1 tm = match tm with
 
     (* E-App2: evaluate argument before applying function *)
   | TmApp (v1, t2) when isval v1 ->
-      let t2' = eval1 t2 in
+      let t2' = eval1 vctx t2 in
       TmApp (v1, t2')
 
     (* E-App1: evaluate function before argument *)
   | TmApp (t1, t2) ->
-      let t1' = eval1 t1 in
+      let t1' = eval1 vctx t1 in
       TmApp (t1', t2)
 
     (* E-LetV *)
@@ -310,18 +331,46 @@ let rec eval1 tm = match tm with
 
     (* E-Let *)
   | TmLetIn(x, t1, t2) ->
-      let t1' = eval1 t1 in
+      let t1' = eval1 vctx t1 in
       TmLetIn (x, t1', t2) 
-
+      
+    (* E-FixBeta *)
+  | TmFix (TmAbs (x, _, t2)) ->
+      subst x tm t2
+      
+    (* E-Fix *)
+  | TmFix t1 ->
+      let t1' = eval1 vctx t1 in
+      TmFix t1'
+      
+    (* TmVar *)
+  | TmVar s ->
+      getbinding vctx s
   | _ ->
       raise NoRuleApplies
 ;;
 
-let rec eval tm =
+(* List.fold_left aplica la funcion determinada a una lista *)
+let apply_ctx ctx termino =
+  List.fold_left (fun t x -> subst x (getbinding ctx x) t) termino (free_vars termino)
+
+let rec eval vctx tm =
   try
-    let tm' = eval1 tm in
-    eval tm'
+    let tm' = eval1 vctx tm in
+    eval vctx tm'
   with
-    NoRuleApplies -> tm
+    NoRuleApplies -> apply_ctx vctx tm
 ;;
 
+let execute (vctx, tctx) = function
+    Eval tm ->
+       let tyTm = typeof tctx tm in
+       let tm' = eval vctx tm in
+       print_endline ( "- :" ^ string_of_ty tyTm ^ " = " ^ string_of_term tm' );
+       (vctx, tctx)
+       
+  | Bind (s, tm) ->
+     let tyTm = typeof tctx tm in
+     let tm' = eval vctx tm in
+     print_endline ( s ^ " : " ^ string_of_ty tyTm ^ " = " ^ string_of_term tm' );
+     (addbinding vctx s tm', addbinding tctx s tyTm)
