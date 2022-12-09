@@ -10,29 +10,28 @@ open Lexer;;
 
 let top_level_loop () =
   print_endline "Evaluator of lambda expressions...";
-  let rec loop ctx =
+  let rec loop (vctx, tctx) =
     print_string ">> ";
     flush stdout;
     try
-      let tm = s token (from_string (read_line ())) in
-      let tyTm = typeof ctx tm in
-      print_endline (string_of_term (eval tm) ^ " : " ^ string_of_ty tyTm);
-      loop ctx
+      let c = s token (from_string (read_line ())) in
+      loop (execute (vctx, tctx) c)
     with
        Lexical_error ->
          print_endline "Lexical error";
-         loop ctx
+         loop (vctx, tctx)
      | Parse_error ->
          print_endline "Syntax error";
-         loop ctx
+         loop (vctx, tctx)
      | Type_error e ->
          print_endline ("Type error: " ^ e);
-         loop ctx
+         loop (vctx, tctx)
      | End_of_file ->
          print_endline "Farewell!"
   in
-    loop emptyctx
+    loop (emptyctx, emptyctx)
   ;;
 
-top_level_loop () ;;
+top_level_loop () 
+;;
 
