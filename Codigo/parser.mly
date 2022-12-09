@@ -13,6 +13,7 @@
 %token PRED
 %token ISZERO
 %token LET
+%token LETREC
 %token IN
 %token BOOL
 %token NAT
@@ -29,11 +30,13 @@
 %token <string> STRINGV
 
 %start s
-%type <Lambda.term> s
+%type <Lambda.comando> s
 
 %%
 
 s :
+    STRINGV EQ term EOF
+      { Bind ($1, $3) }
     term EOF
       { $1 }
 
@@ -46,6 +49,8 @@ term :
       { TmAbs ($2, $4, $6) }
   | LET STRINGV EQ term IN term
       { TmLetIn ($2, $4, $6) }
+  | LETREC STRINGV COLON ty EQ term IN term
+      { TmLetIn ($2, TmFix (TmAbs ($2, $4, $6)), $8) }
 
 appTerm :
     atomicTerm
