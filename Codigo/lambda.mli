@@ -5,8 +5,8 @@ type ty =
   | TyArr of ty * ty
 ;;
 
-type context =
-  (string * ty) list
+type 'a context =
+  (string * 'a) list
 ;;
 
 type term =
@@ -39,4 +39,6 @@ val typeof : ty context -> term -> ty;;
 val string_of_term : term -> string;;
 exception NoRuleApplies;;
 val eval : term context -> term -> term;;
+
+val execute : term context * ty context -> comando -> term context * ty context;;
 

@@ -7,7 +7,7 @@ type ty =
   | TyArr of ty * ty
 ;;
 
-type a' context =
+type 'a context =
   (string * 'a) list
 ;;
 
