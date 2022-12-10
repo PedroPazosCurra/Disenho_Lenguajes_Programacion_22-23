@@ -27,7 +27,6 @@ type term =
   | TmFix of term
   | TmString of string	
   | TmConcat of term * term
-  | TmTuple of term * term
 ;;
 
 type comando =
@@ -148,9 +147,10 @@ let rec typeof ctx tm = match tm with
   | TmConcat (t1, t2) ->
       let tyT1 = typeof ctx t1 in
       let tyT2 = typeof ctx t2 in
-      match (tyT1, tyT2) with 
+      (match (tyT1, tyT2) with 
           (TyString, TyString) -> TyString
-        | _ -> raise (Type_error "arguments of concat are not strings")  
+        | _ -> raise (Type_error "arguments of concat are not strings") 
+      )
 ;;
 
 
@@ -393,7 +393,7 @@ let execute (vctx, tctx) = function
     Eval tm ->
        let tyTm = typeof tctx tm in
        let tm' = eval vctx tm in
-       print_endline ( "- :" ^ string_of_ty tyTm ^ " = " ^ string_of_term tm' );
+       print_endline (string_of_term tm' ^ " : " ^ string_of_ty tyTm);
        (vctx, tctx)
        
   | Bind (s, tm) ->

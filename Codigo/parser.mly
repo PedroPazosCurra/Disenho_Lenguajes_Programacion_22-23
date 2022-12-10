@@ -61,8 +61,6 @@ term :
       { TmLetIn ($2, $4, $6) }
   | LETREC STRINGV COLON ty EQ term IN term
       { TmLetIn ($2, TmFix (TmAbs ($2, $4, $6)), $8) }
-  | OPEN_TUPLE term COMA term CLOSE_TUPLE
-      { TmTuple ($2, $4) }
 
 appTerm :
     atomicTerm

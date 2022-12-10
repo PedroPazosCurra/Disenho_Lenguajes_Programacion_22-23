@@ -25,7 +25,6 @@ type term =
   | TmFix of term
   | TmString of string
   | TmConcat of term * term
-  | TmTuple of term * term
 ;;
 
 type comando =
