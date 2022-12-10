@@ -8,13 +8,20 @@ open Lexer;;
 
 (* Bucle iterativo superior de la interfaz *)
 
+let rec process_line line =
+  if String.contains line ';' then s token (from_string (String.sub line 0 (1 + String.index line ';')))
+  else begin
+    flush stdout;
+    process_line (line ^ "\n" ^ read_line ())
+  end
+
 let top_level_loop () =
   print_endline "Evaluator of lambda expressions...";
   let rec loop (vctx, tctx) =
     print_string ">> ";
     flush stdout;
     try
-      let c = s token (from_string (read_line ())) in
+      let c = process_line (String.trim (read_line ()))  in
       loop (execute (vctx, tctx) c)
     with
        Lexical_error ->

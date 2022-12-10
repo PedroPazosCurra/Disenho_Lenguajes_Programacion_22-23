@@ -5,7 +5,7 @@
 }
 
 rule token = parse
-    [' ' '\t']  { token lexbuf }
+    [' ' '\t' '\r' '\n']*  { token lexbuf }
   | "lambda"    { LAMBDA }
   | "L"         { LAMBDA }
   | "true"      { TRUE }
@@ -21,12 +21,19 @@ rule token = parse
   | "in"        { IN }
   | "Bool"      { BOOL }
   | "Nat"       { NAT }
+  | "concat"    { CONCAT }
+  | "String"    { STRING }
   | '('         { LPAREN }
   | ')'         { RPAREN }
+  | ','         { COMA }
+  | ';'        { END_PROCESSING }
+  | '{'         { OPEN_TUPLE }
+  | '}'         { CLOSE_TUPLE }
   | '.'         { DOT }
   | '='         { EQ }
   | ':'         { COLON }
   | "->"        { ARROW }
+  | '"'['A'-'Z''a'-'z''0'-'9' ' ']*'"' as string     { STRINGVAL (String.sub string 1 (String.index_from string 1 '"' - 1)) }
   | ['0'-'9']+  { INTV (int_of_string (Lexing.lexeme lexbuf)) }
   | ['a'-'z']['a'-'z' '_' '0'-'9']*
                 { STRINGV (Lexing.lexeme lexbuf) }

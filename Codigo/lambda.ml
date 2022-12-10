@@ -5,6 +5,7 @@ type ty =
     TyBool
   | TyNat
   | TyArr of ty * ty
+  | TyString
 ;;
 
 type 'a context =
@@ -24,6 +25,9 @@ type term =
   | TmApp of term * term
   | TmLetIn of string * term * term
   | TmFix of term
+  | TmString of string	
+  | TmConcat of term * term
+  | TmTuple of term * term
 ;;
 
 type comando =
@@ -55,6 +59,8 @@ let rec string_of_ty ty = match ty with
       "Nat"
   | TyArr (ty1, ty2) ->
       "(" ^ string_of_ty ty1 ^ ")" ^ " -> " ^ "(" ^ string_of_ty ty2 ^ ")"
+  | TyString ->
+      "String"      
 ;;
 
 exception Type_error of string
@@ -133,6 +139,18 @@ let rec typeof ctx tm = match tm with
                 else raise (Type_error "Body result is not compatible with domain")
             | _ -> raise (Type_error "Arrow type expected")
          )
+
+    (*T-String*)
+  | TmString _ ->
+     TyString
+  
+    (*T-Concat*)
+  | TmConcat (t1, t2) ->
+      let tyT1 = typeof ctx t1 in
+      let tyT2 = typeof ctx t2 in
+      match (tyT1, tyT2) with 
+          (TyString, TyString) -> TyString
+        | _ -> raise (Type_error "arguments of concat are not strings")  
 ;;
 
 
@@ -169,6 +187,10 @@ let rec string_of_term = function
       "let " ^ s ^ " = " ^ string_of_term t1 ^ " in " ^ string_of_term t2
   | TmFix termino ->
       "(fix " ^ string_of_term termino ^ ")" 
+  | TmString s ->
+      s
+  | TmConcat (t1, t2) ->
+       string_of_term t1 ^ string_of_term t2
 ;;
 
 let rec ldif l1 l2 = match l1 with
@@ -206,6 +228,10 @@ let rec free_vars tm = match tm with
       lunion (ldif (free_vars t2) [s]) (free_vars t1)
   | TmFix termino ->
       free_vars termino
+  | TmString _ ->
+    []
+  | TmConcat _ ->
+    []
 ;;
 
 let rec fresh_name x l =
@@ -247,6 +273,7 @@ let rec subst x s tm = match tm with
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
   | TmFix t ->
        TmFix (subst x s t)
+  | TmString _ -> tm 
 ;;
 
 let rec isnumericval tm = match tm with

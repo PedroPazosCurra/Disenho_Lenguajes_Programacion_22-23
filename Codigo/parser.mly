@@ -26,8 +26,18 @@
 %token ARROW
 %token EOF
 
+%token STRING
+%token CONCAT
+
+%token END_PROCESSING
+%token OPEN_TUPLE
+%token CLOSE_TUPLE
+%token COMA
+
 %token <int> INTV
 %token <string> STRINGV
+
+%token <string> STRINGVAL
 
 %start s
 %type <Lambda.comando> s
@@ -35,9 +45,9 @@
 %%
 
 s :
-    STRINGV EQ term EOF
+    STRINGV EQ term END_PROCESSING EOF
       { Bind ($1, $3) }
-  | term EOF
+  | term END_PROCESSING EOF
       { Eval $1 }
 
 term :
@@ -51,6 +61,8 @@ term :
       { TmLetIn ($2, $4, $6) }
   | LETREC STRINGV COLON ty EQ term IN term
       { TmLetIn ($2, TmFix (TmAbs ($2, $4, $6)), $8) }
+  | OPEN_TUPLE term COMA term CLOSE_TUPLE
+      { TmTuple ($2, $4) }
 
 appTerm :
     atomicTerm
@@ -61,6 +73,8 @@ appTerm :
       { TmPred $2 }
   | ISZERO atomicTerm
       { TmIsZero $2 }
+  | CONCAT atomicTerm atomicTerm
+      { TmConcat ($2, $3) }
   | appTerm atomicTerm
       { TmApp ($1, $2) }
 
@@ -78,6 +92,8 @@ atomicTerm :
             0 -> TmZero
           | n -> TmSucc (f (n-1))
         in f $1 }
+  | STRINGVAL
+      { TmString ($1) }
 
 ty :
     atomicTy
@@ -92,4 +108,6 @@ atomicTy :
       { TyBool }
   | NAT
       { TyNat }
+  | STRING
+      { TyString }
 
