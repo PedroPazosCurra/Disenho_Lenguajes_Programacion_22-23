@@ -6,6 +6,7 @@ type ty =
   | TyNat
   | TyArr of ty * ty
   | TyString
+  | TyCartesian of ty * ty
 ;;
 
 type 'a context =
@@ -27,6 +28,8 @@ type term =
   | TmFix of term
   | TmString of string	
   | TmConcat of term * term
+  | TmTuple of term * term
+  | TmTupleProj of term * int
 ;;
 
 type comando =
@@ -59,7 +62,9 @@ let rec string_of_ty ty = match ty with
   | TyArr (ty1, ty2) ->
       "(" ^ string_of_ty ty1 ^ ")" ^ " -> " ^ "(" ^ string_of_ty ty2 ^ ")"
   | TyString ->
-      "String"      
+      "String"    
+  | TyCartesian (ty1, ty2) ->  
+    "(" ^ string_of_ty ty1 ^ " X " ^ string_of_ty ty2 ^ ")"
 ;;
 
 exception Type_error of string
@@ -151,6 +156,21 @@ let rec typeof ctx tm = match tm with
           (TyString, TyString) -> TyString
         | _ -> raise (Type_error "arguments of concat are not strings") 
       )
+
+    (*T-Pair*)
+  | TmTuple (t1, t2) ->
+    let tyT1 = typeof ctx t1 in
+    let tyT2 = typeof ctx t2 in
+    TyCartesian(tyT1, tyT2)
+  
+    (*T-Proj*)
+  | TmTupleProj (t1, pos) -> 
+    let ty1 = typeof ctx t1 in 
+    (match (ty1, pos) with
+      (TyCartesian(a, b), 1) -> a 
+      | (TyCartesian(a, b), 2) -> b 
+      | _ -> raise (Type_error "Invalid position")
+    )
 ;;
 
 
@@ -191,6 +211,10 @@ let rec string_of_term = function
       s
   | TmConcat (t1, t2) ->
        string_of_term t1 ^ string_of_term t2
+  | TmTuple (t1, t2) -> 
+       "{" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ "}" 
+  | TmTupleProj (t1, pos) -> 
+      string_of_term t1 ^ "." ^ string_of_int pos 
 ;;
 
 let rec ldif l1 l2 = match l1 with
@@ -232,6 +256,10 @@ let rec free_vars tm = match tm with
     []
   | TmConcat _ ->
     []
+  | TmTuple (t1, t2) ->
+      lunion (free_vars t1) (free_vars t2)
+  | TmTupleProj (t1, pos) ->
+      (free_vars t1)
 ;;
 
 let rec fresh_name x l =
@@ -273,7 +301,9 @@ let rec subst x s tm = match tm with
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
   | TmFix t ->
        TmFix (subst x s t)
-  | TmString _ -> tm 
+  | TmString _ -> tm
+  | TmConcat (t1, t2) ->
+      TmConcat(subst x s t1, subst x s t2)
 ;;
 
 let rec isnumericval tm = match tm with
@@ -287,6 +317,8 @@ let rec isval tm = match tm with
   | TmFalse -> true
   | TmAbs _ -> true
   | t when isnumericval t -> true
+  | TmString _ -> true
+  | TmTuple (t1, t2) -> (isval t1) && (isval t2)
   | _ -> false
 ;;
 
@@ -370,6 +402,28 @@ let rec eval1 vctx tm = match tm with
       let t1' = eval1 vctx t1 in
       TmFix t1'
       
+    (*E- PairBeta*)
+  | TmTupleProj (t, pos) when (isval t) -> (match (t, pos) with
+      TmTuple(v1, v2), 1 -> v1 
+      | TmTuple(v1, v2), 2 -> v2
+      | _ -> raise (Type_error "Invalid position")
+  )
+
+      (*E-Proj*)
+  | TmTupleProj (t1, pos) ->
+      let t1' = eval1 vctx t1 in 
+      TmTupleProj(t1', pos)
+
+    (*E-Pair1*)
+  | TmTuple (t1, t2) ->
+      let t1' = eval1 vctx t1 in 
+      TmTuple(t1', t2)
+    
+    (*E-Pair2*)
+  | TmTuple (v1, t2) when isval v1 ->
+      let t2' = eval1 vctx t2 in 
+      TmTuple(v1, t2') 
+  
     (* TmVar *)
   | TmVar s ->
       getbinding vctx s

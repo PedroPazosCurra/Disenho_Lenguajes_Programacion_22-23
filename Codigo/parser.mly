@@ -33,6 +33,7 @@
 %token OPEN_TUPLE
 %token CLOSE_TUPLE
 %token COMA
+%token X
 
 %token <int> INTV
 %token <string> STRINGV
@@ -61,7 +62,11 @@ term :
       { TmLetIn ($2, $4, $6) }
   | LETREC STRINGV COLON ty EQ term IN term
       { TmLetIn ($2, TmFix (TmAbs ($2, $4, $6)), $8) }
-
+  | OPEN_TUPLE term COMA term CLOSE_TUPLE
+      { TmTuple ($2, $4) }
+  | OPEN_TUPLE term COMA term CLOSE_TUPLE DOT INTV
+      { TmTupleProj (TmTuple ($2, $4), $7) }
+      
 appTerm :
     atomicTerm
       { $1 }
@@ -98,6 +103,8 @@ ty :
       { $1 }
   | atomicTy ARROW ty
       { TyArr ($1, $3) }
+  | atomicTy X atomicTy
+      { TyCartesian ($1, $3) }
 
 atomicTy :
     LPAREN ty RPAREN  

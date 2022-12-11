@@ -23,6 +23,7 @@ rule token = parse
   | "Nat"       { NAT }
   | "concat"    { CONCAT }
   | "String"    { STRING }
+  | "X"         { X }
   | '('         { LPAREN }
   | ')'         { RPAREN }
   | ','         { COMA }
