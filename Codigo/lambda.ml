@@ -254,8 +254,8 @@ let rec free_vars tm = match tm with
       free_vars termino
   | TmString _ ->
     []
-  | TmConcat _ ->
-    []
+  | TmConcat (t1, t2) ->
+      lunion (free_vars t1) (free_vars t2)
   | TmTuple (t1, t2) ->
       lunion (free_vars t1) (free_vars t2)
   | TmTupleProj (t1, pos) ->
@@ -401,7 +401,21 @@ let rec eval1 vctx tm = match tm with
   | TmFix t1 ->
       let t1' = eval1 vctx t1 in
       TmFix t1'
+
+    (*E-Concat1*)
+  | TmConcat (TmString v1, TmString v2) ->
+      TmString (v1 ^ v2)
       
+  (*E-Concat2*)
+  | TmConcat (TmString v1, t2) ->
+    let t2' = eval1 vctx t2 in 
+    TmConcat (TmString v1, t2')
+
+  (*E-Concat3*)
+  | TmConcat (t1, t2) ->
+    let t1' = eval1 vctx t1 in
+    TmConcat (t1', t2)
+
     (*E- PairBeta*)
   | TmTupleProj (t, pos) when (isval t) -> (match (t, pos) with
       TmTuple(v1, v2), 1 -> v1 
