@@ -3,11 +3,92 @@ Programming Languages Design: Memory
 -User Manual
 Formal exposition with execution samples of new interpreter functionalities.
 
+1.1: Multi-line expressions recognition
+
+	Terms are read in different lines, as opposed to the former implementation, in which any term would've been read in only one line.
+	Now, it's used the semicolon ";" character to indicate the end of an expression.
+
+	x
+	=
+	true;
+	    ↑
+
+1.2: "Pretty-printer"
+
+2.1: Internal fixed point combinator implementation
+
+	In lambda calculus, the fixed point combinator is a function that returns a fixed point for a given function. 
+	This means that we can have a function F get another function g as parameter and returning an input function parameter l
+
+
+	fix f = f(fix f)
+	fix f = f(f(fix f))
+	...
+
+	This function allows us to develop recursive functions in a lambda calculus framework, in which recursion is not natively supported. 
+
+	In this interpreter, fixed point combinator is called through the "letrec" function. It allows us to define a recursive function on a similar way to the following:
+
+		letrec sum : Nat -> Nat -> Nat =
+			lambda n : Nat. lambda m : Nat. if iszero n then m else succ (sum (pred n) m) in
+		sum 21 34
+
+	The format is like:
+
+		letrec [function name] : [function types] =
+			[parameters definition] [recursive function definition] in
+		[function name] [parameters value]
+
+
+
+
+2.2: Global definition context
+
+	There's the possibility of assigning a free variable identifier to any value or term so we can use it in further expressions as an alias.
+	
+	Formatting:	[identifying name] = [term]	
+	Example:	x = if true then true else false
+
+
+
+	***Currently, this functionality is designed to override any id that is assigned twice. (...)
+			
+
+
+2.3: String type
+
+	String type is available for users. As in many other languages, string variables are a succession of one or more characters.
+	They are summoned by "[string]". For instance, "great" is a valid string.
+
+	Concatenation is also supported for strings. It's called through concat method.
+
+	Formatting: 	concat [str1] [str2]
+	Example:	concat "straw" "berry"
+
+
+
+2.4, 2.5: Pair and Tuple type
+
+	Tuples are finite ordered collections of items. They are currently implemented on the {item1{item2{...}}} format.
+
+	A pair is a determined concreteness of the tuple type in which the dimensionality of the tuple is only of two elements.
+
+
+2.6: Registers
+
+2.7: Lists
+
+2.8: Subtyping
+
+2.9: Unit type
+
+2.10: I/O Operations
+
 
 
 
 -Technical Manual
-Wich modules from the original code have been changed and what type of adjustements have been made to achieve the implementation of the new functionalities
+Which modules from the original code have been changed and what type of adjustements have been made to achieve the implementation of the new functionalities
 
 
 1.1: Multi-line expressions recognition
@@ -36,7 +117,4 @@ Wich modules from the original code have been changed and what type of adjusteme
 2.9: Unit type
 
 2.10: I/O Operations
-
-
-
 
