@@ -20,7 +20,35 @@ let fix = lambda f.(lambda x. f (lambda y. x x y)) (lambda x. f (lambda y. x x y
 letrec sum: Nat-> Nat -> Nat = lambda n : Nat. lambda m : Nat. if iszero n then m else succ (sum (pred n) m) in sum 21 34
 
 
-(*Strings*)
+
+
+
+(* Recursividad *)
+letrec sum : Nat -> Nat -> Nat =
+	lambda n : Nat. lambda m : Nat. if iszero n then m else succ (sum (pred n) m) in
+sum 21 34
+
+
+letrec prod: Nat -> Nat -> Nat =
+	lambda n : Nat. lambda m : Nat. if iszero m then n else prod (sum n n) (pred m) in
+prod 6 5	
+	
+
+letrec fact: Nat -> Nat -> Nat =
+	lambda n: Nat. lambda m: Nat.
+	if iszero (pred n) then m else fact (pred n) (prod n (pred n)) in 
+fact 6 0
+
+
+letrec fib: Nat -> Nat =
+	lambda n: Nat.
+	if iszero pred (pred n) then 1 else fib sum (fib pred(pred n)) (fib pred n)  in
+fib 5
+
+
+
+
+(* Strings *)
 "Hola";
 concat "Ho" "la";
 let c = L x:String. concat "ho" x in c "la";
