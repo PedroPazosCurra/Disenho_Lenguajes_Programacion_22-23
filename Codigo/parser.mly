@@ -30,13 +30,18 @@
 
 %token STRING                /* 2.3- String type.  */
 %token CONCAT                /* 2.3- String type.  */
-%token UNIT
-%token UNITVAL
+%token UNIT                  /* 2.9- Unit type     */
+%token UNITVAL               /* 2.9- Unit type     */
 %token END_PROCESSING        /* 1.1- Multiline expressions */
-%token OPEN_BRACKET            /* 2.5- Tuple type */
-%token CLOSE_BRACKET           /* 2.5- Tuple type */
-%token COMA                  /* 2.5- Tuple type */
-%token X                     /* Cartesian product */
+%token OPEN_BRACKET          /* 2.5- Tuple type    */
+%token CLOSE_BRACKET         /* 2.5- Tuple type    */
+%token COMA                  /* 2.5- Tuple type    */
+%token X                     /* Cartesian product  */
+%token PRINT_NAT             /* 2.10- IO operations*/
+%token PRINT_STRING          /* 2.10- IO operations*/
+%token PRINT_NEWLINE         /* 2.10- IO operations*/
+%token READ_NAT              /* 2.10- IO operations*/
+%token READ_STRING           /* 2.10- IO operations*/
 %token SEMICOLON
 
 %token <int> INTV
@@ -80,6 +85,16 @@ appTerm :
       { TmIsZero $2 }
   | CONCAT atomicTerm atomicTerm    /* For strings concatenation, it's detected the format "concat [atomic term] [atomic term]" */
       { TmConcat ($2, $3) }
+  | PRINT_NAT atomicTerm
+      { TmPrintNat $2 }
+  | PRINT_STRING atomicTerm
+      { TmPrintString $2 }
+  | PRINT_NEWLINE atomicTerm
+      { TmPrintNewline $2 }
+  | READ_NAT atomicTerm
+      { Tm ReadNat $2 }
+  | READ_STRING atomicTerm
+      { Tm ReadString $2 }
   | appTerm atomicTerm
       { TmApp ($1, $2) }
 
@@ -105,6 +120,7 @@ atomicTerm :
       { TmTuple $2 }
   | OPEN_BRACKET tupleFields CLOSE_BRACKET DOT INTV
       { TmTupleProj (TmTuple $2, $5) }
+
 tupleFields:
     term 
         { [$1] }
@@ -129,7 +145,7 @@ atomicTy :
       { TyString }
   | UNIT                            /* Built-in for Unit type. */
       { TyUnit }
-  | OPEN_BRACKET tupleTypes CLOSE_BRACKET           /* Tipo implementado para producto cartesiano. Detecta el formato "[tipo] x [tipo]" */
+  | OPEN_BRACKET tupleTypes CLOSE_BRACKET           /* Built-in type for cartesian product. Detects the format "[type] x [type]" */
       { TyTuple ($2) }
       
 tupleTypes:
