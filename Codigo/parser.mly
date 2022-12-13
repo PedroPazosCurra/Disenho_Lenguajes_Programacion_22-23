@@ -33,8 +33,8 @@
 %token UNIT
 %token UNITVAL
 %token END_PROCESSING        /* 1.1- Multiline expressions */
-%token OPEN_TUPLE            /* 2.5- Tuple type */
-%token CLOSE_TUPLE           /* 2.5- Tuple type */
+%token OPEN_BRACKET            /* 2.5- Tuple type */
+%token CLOSE_BRACKET           /* 2.5- Tuple type */
 %token COMA                  /* 2.5- Tuple type */
 %token X                     /* Cartesian product */
 %token SEMICOLON
@@ -68,10 +68,6 @@ term :
       { TmLetIn ($2, $4, $6) }
   | LETREC STRINGV COLON ty EQ term IN term               /* For recursivity, it's detected the format "letrec [name]. [types] = [term] in [term]"   */
       { TmLetIn ($2, TmFix (TmAbs ($2, $4, $6)), $8) }    
-  | OPEN_TUPLE term COMA term CLOSE_TUPLE                 /* Pattern-matching for tuple type, with format "{ [term], [term] }"                         */
-      { TmTuple ($2, $4) }
-  | OPEN_TUPLE term COMA term CLOSE_TUPLE DOT INTV        /* Pattern-matching for tuple type, with format "{ [term], [term] }.[int]"                   */
-      { TmTupleProj (TmTuple ($2, $4), $7) }
       
 appTerm :
     atomicTerm
@@ -105,6 +101,15 @@ atomicTerm :
       { TmString ($1) }
   | UNITVAL                         /* Built-in for Unit type. */
       { TmUnit }
+  | OPEN_BRACKET tupleFields CLOSE_BRACKET  /* Pattern-matching for tuple type, with format "{ [term], [term] }"                         */
+      { TmTuple $2 }
+      
+tupleFields:
+    term 
+        { [$1] }
+  | term COMA tupleFields
+        { $1 :: $3 }
+
 
 ty :
     atomicTy
@@ -125,3 +130,11 @@ atomicTy :
       { TyString }
   | UNIT                            /* Built-in for Unit type. */
       { TyUnit }
+  | OPEN_BRACKET tupleTypes CLOSE_BRACKET           /* Tipo implementado para producto cartesiano. Detecta el formato "[tipo] x [tipo]" */
+      { TyTuple ($2) }
+      
+tupleTypes:
+    atomicTy
+    { [$1] }
+  | atomicTy COMA tupleTypes
+    { $1 :: $3 }
