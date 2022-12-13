@@ -6,8 +6,8 @@ type ty =
   | TyNat
   | TyArr of ty * ty
   | TyString
-  | TyTuple of ty list   (* Added for Tuple type (2.5) *)
-  | TyUnit                      (* Added for Unit type (2.9) *)
+  | TyTuple of ty list          (* Added for Tuple type (2.5) *)
+  | TyUnit                      (* Added for Unit type (2.9)  *)
 ;;
 
 type 'a context =               (* Added for global context (2.2). A context is a list of "string * [anything]" items. *)
@@ -29,7 +29,7 @@ type term =
   | TmFix of term                       (* Added for fix point combinator (2.1) *)
   | TmString of string	                (* Added for String type (2.3)          *)
   | TmConcat of term * term             (* Added for String type (2.3)          *)
-  | TmTuple of term list            (* Added for Tuple type (2.5)           *)
+  | TmTuple of term list                (* Added for Tuple type (2.5)           *)
   | TmTupleProj of term * int           (* Added for Tuple type (2.5)           *)
   | TmUnit                              (* Added for Unit type (2.9)            *)
 (*| TmPrintNat of term *)               (* Added for I/O operations (2.10)      *)
@@ -39,9 +39,9 @@ type term =
 (*| TmReadString *)                     (* Added for I/O operations (2.10)      *)
 ;;
 
-type comando =                          (* Added for global context (2.2) *)
-    Eval of term                        (*  Given the input from the command line, the whole input*)
-  | Bind of string * term               (*  it should be evaluated or binded *)
+type comando =                          (* Added for global context (2.2)                          *)
+    Eval of term                        (*  Given the input from the command line, the whole input *)
+  | Bind of string * term               (*  it should be evaluated or binded                       *)
 
 
 (* CONTEXT MANAGEMENT *)
@@ -78,7 +78,7 @@ let rec string_of_ty ty = match ty with
       "(" ^ string_of_ty ty1 ^ ")" ^ " -> " ^ "(" ^ string_of_ty ty2 ^ ")"
   | TyString ->
       "String"    
-  | TyTuple types ->                               (* Added for cartesian: passed to string as "([type] X [type])" *)
+  | TyTuple types ->                                        (* Added for cartesian: passed to string as "([type] X [type])" *)
       let list = List.map (fun t -> string_of_ty t) types
       in string_of_tuple list 
   | TyUnit ->                                               (* Added for unit: passed to string as "Unit" *)
@@ -230,16 +230,16 @@ let rec string_of_term = function
       "let " ^ s ^ " = " ^ string_of_term t1 ^ " in " ^ string_of_term t2
   | TmFix termino ->                                                            (* Added for fix point combinator: returns "(fix [string_of_inner_term])" *)
       "(fix " ^ string_of_term termino ^ ")"                                   
-  | TmString s ->                                                               (* Added for string type: returns the own string value *)
+  | TmString s ->                                                               (* Added for string type: returns the own string value                    *)
       s 
-  | TmConcat (t1, t2) ->                                                        (* Added for string type: string a concat returns *)
-       string_of_term t1 ^ string_of_term t2                                    (* the string of both inner terms (ideally string)*)
-  | TmTuple terms ->                                                            (* Added for tuple type: corresponding string is: *)
-      let list = List.map (fun t -> string_of_term t) terms                        (*  "{ item1_string, item2_string }" *)
+  | TmConcat (t1, t2) ->                                                        (* Added for string type: string a concat returns                         *)
+       string_of_term t1 ^ string_of_term t2                                    (* the string of both inner terms (ideally string)                        *)
+  | TmTuple terms ->                                                            (* Added for tuple type: corresponding string is:                         *)
+      let list = List.map (fun t -> string_of_term t) terms                     (*  "{ item1_string, item2_string }"                                      *)
       in string_of_tuple list                                                   
   | TmTupleProj (terms, pos) ->    
       string_of_term terms ^ "." ^ string_of_int pos 
-  | TmUnit ->                                                                   (* Added for unit type: Unit terms string are "unit" *)
+  | TmUnit ->                                                                   (* Added for unit type: Unit terms string are "unit"                      *)
       "unit"
 ;;
 
@@ -300,6 +300,10 @@ let rec fresh_name x l =
 
 
 (* "subst" method performs lambda substitution. *)
+(*						                        *)
+(* On abstractions, substitution works like	    *)
+(*	        (λx. y)z  ==  y[x ← z]  		    *)
+(*						                        *)
 let rec subst x s tm = match tm with
     TmTrue ->
       TmTrue
@@ -333,39 +337,46 @@ let rec subst x s tm = match tm with
            then TmLetIn (y, subst x s t1, subst x s t2)
            else let z = fresh_name y (free_vars t2 @ fvs) in
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
-  | TmFix t ->
-       TmFix (subst x s t)
-  | TmString t -> TmString t
+  | TmFix t ->						                    (* Addition for Fix term (2.2) 		*)
+       TmFix (subst x s t)				                (*| Addition for String type terms (2.3)*)
+  | TmString t -> TmString t				            (*| 				  	*)
   | TmConcat (t1, t2) ->
       TmConcat(subst x s t1, subst x s t2)
-  | TmTuple terms ->
-      TmTuple (List.map (fun t -> subst x s t) terms)
-  | TmTupleProj(t, pos) ->
-      TmTupleProj(subst x s t, pos)
-  | TmUnit ->
+  | TmTuple terms ->				                    (*| Addition for Tuple type terms (2.5)	*)
+      TmTuple (List.map (fun t -> subst x s t) terms)   (*|                 					*)
+  | TmTupleProj(t, pos) ->				                (*|					                    *)
+      TmTupleProj(subst x s t, pos)                     (*|				                    	*)
+  | TmUnit ->                                           (*  Addition for Unit type terms (2.9)  *)
       TmUnit
 ;;
 
+
+(* "isnumericval" method*)
 let rec isnumericval tm = match tm with
     TmZero -> true
   | TmSucc t -> isnumericval t
   | _ -> false
 ;;
 
+
+(* "isval" method checks if certain term has a value assigned. *)
 let rec isval tm = match tm with
     TmTrue  -> true
   | TmFalse -> true
   | TmAbs _ -> true
-  | t when isnumericval t -> true
   | TmString _ -> true
   | TmTuple terms-> List.for_all (fun t -> isval t) terms
   | TmUnit -> true
+  | t when isnumericval t -> true
   | _ -> false
 ;;
 
 exception NoRuleApplies
 ;;
 
+
+(* "eval1" is the evaluation method and the core of the evaluation process. *)
+(* 	It implements the intended logic of every built term.	 	            *)
 let rec eval1 vctx tm = match tm with
     (* E-IfTrue *)
     TmIf (TmTrue, t2, _) ->
@@ -435,27 +446,27 @@ let rec eval1 vctx tm = match tm with
       TmLetIn (x, t1', t2) 
       
     (* E-FixBeta *)
-  | TmFix (TmAbs (x, _, t2)) ->
-      subst x tm t2
-      
-    (* E-Fix *)
-  | TmFix t1 ->
-      let t1' = eval1 vctx t1 in
-      TmFix t1'
+  | TmFix (TmAbs (x, _, t2)) ->             (* | Addition for Fix term (2.2) 		                        *)
+      subst x tm t2                         (* | Fix of an abstraction is evaluated as the substituted term *)
+                                            (* |                                                            *)
+    (* E-Fix *)                             (* |                                                            *)
+  | TmFix t1 ->                             (* |                                                            *)
+      let t1' = eval1 vctx t1 in            (* |                                                            *)
+      TmFix t1'                             (* |                                                            *)
 
     (*E-Concat1*)
-  | TmConcat (TmString v1, TmString v2) ->
-      TmString (v1 ^ v2)
-      
-  (*E-Concat2*)
-  | TmConcat (TmString v1, t2) ->
-    let t2' = eval1 vctx t2 in 
-    TmConcat (TmString v1, t2')
-
-  (*E-Concat3*)
-  | TmConcat (t1, t2) ->
-    let t1' = eval1 vctx t1 in
-    TmConcat (t1', t2)
+  | TmConcat (TmString v1, TmString v2) ->  (* | Addition for String type (2.3)                        *)
+      TmString (v1 ^ v2)                    (* | Given two strings returns the concatenation           *)
+                                            (* |                                                       *)
+  (*E-Concat2*)                             (* |                                                       *)
+  | TmConcat (TmString v1, t2) ->           (* | If one or both items are not inmediately string terms *)
+    let t2' = eval1 vctx t2 in              (* | context is looked up for coincidences                 *)
+    TmConcat (TmString v1, t2')             (* |                                                       *)
+                                            (* |                                                       *)
+  (*E-Concat3*)                             (* |                                                       *)
+  | TmConcat (t1, t2) ->                    (* |                                                       *)
+    let t1' = eval1 vctx t1 in              (* |                                                       *)
+    TmConcat (t1', t2)                      (* |                                                       *)
 
     (*E- ProjTuple*)
   | TmTupleProj (t, pos) when (isval t) -> (match t with
@@ -465,30 +476,34 @@ let rec eval1 vctx tm = match tm with
   )
 
       (*E-Proj*)
-  | TmTupleProj (t1, pos) ->
-      let t1' = eval1 vctx t1 in 
-      TmTupleProj(t1', pos)
-
-    (*E-Tuple*)
-    | TmTuple terms ->
-        let rec evaluate terms = (match terms with 
-          [] -> raise NoRuleApplies
-          | v::t when isval v -> let t' = evaluate t in v::t'
-          | t1::t -> let t1' = eval1 vctx t1 in t1'::t
-        )
-        in let terms' = evaluate terms in TmTuple terms' 
+  | TmTupleProj (t1, pos) ->                                    (* | Addition for Tuple type (2.5) 		                        *)
+      let t1' = eval1 vctx t1 in                                (* |                            		                        *)
+      TmTupleProj(t1', pos)                                     (* | For tuple projections, it's evaluated the tuple and passed *)
+                                                                (* | as parameter to another projection eval      		        *)
+    (*E-Tuple*)                                                 (* |                            		                        *)
+    | TmTuple terms ->                                          (* |                             		                        *)
+        let rec evaluate terms = (match terms with              (* | For tuples, all individual terms are evaluated recursively *)
+          [] -> raise NoRuleApplies                             (* |                                 	                        *)
+          | v::t when isval v -> let t' = evaluate t in v::t'   (* |                                	                        *)
+          | t1::t -> let t1' = eval1 vctx t1 in t1'::t          (* |                                	                        *)
+        )                                                       (* |                                	                        *)
+        in let terms' = evaluate terms in TmTuple terms'        (* |                                	                        *)
   
     (* TmVar *)
-  | TmVar s ->
+  | TmVar s ->                 
       getbinding vctx s
   | _ ->
       raise NoRuleApplies
 ;;
 
-(* List.fold_left aplica la funcion determinada a una lista *)
+
+(* "apply_ctx" method *)
 let apply_ctx ctx termino =
+  (* "List.fold_left" applies certain function to a list *)
   List.fold_left (fun t x -> subst x (getbinding ctx x) t) termino (free_vars termino)
 
+
+(* Evaluation method that abstracts "eval1" from error catching *)
 let rec eval vctx tm =
   try
     let tm' = eval1 vctx tm in
@@ -497,6 +512,10 @@ let rec eval vctx tm =
     NoRuleApplies -> apply_ctx vctx tm
 ;;
 
+
+(* "execute" method is the first one called after processing the input and matches it either with a evaluation or a bind. *)
+(*  If it has to make an evaluation, it calls "eval" method that does the evaluation work *)
+(*  If a binding has to be made, "addbinding" method is called *)
 let execute (vctx, tctx) = function
     Eval tm ->
        let tyTm = typeof tctx tm in
