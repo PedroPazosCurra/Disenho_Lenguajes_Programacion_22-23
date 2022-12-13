@@ -23,10 +23,13 @@ rule token = parse
   | "Nat"       { NAT }
   | "concat"    { CONCAT }
   | "String"    { STRING }
+  | "Unit"      { UNIT }
+  | "unit"      { UNITVAL }
   | "X"         { X }
   | '('         { LPAREN }
   | ')'         { RPAREN }
   | ','         { COMA }
+  | ';'         { SEMICOLON }
   | ";;"        { END_PROCESSING }
   | '{'         { OPEN_TUPLE }
   | '}'         { CLOSE_TUPLE }

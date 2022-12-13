@@ -30,12 +30,14 @@
 
 %token STRING   /* 2.3- Tipo String.  */
 %token CONCAT   /* 2.3- Tipo String.  */
-
+%token UNIT
+%token UNITVAL
 %token END_PROCESSING   /* 1.1- Expresiones multilínea */
 %token OPEN_TUPLE       /* 2.5- Tipo Tupla */
 %token CLOSE_TUPLE      /* 2.5- Tipo Tupla */
 %token COMA             /* 2.5- Tipo Tupla */
 %token X                /* Producto cartesiano */
+%token SEMICOLON
 
 %token <int> INTV
 %token <string> STRINGV
@@ -101,6 +103,8 @@ atomicTerm :
         in f $1 }
   | STRINGVAL                       /* Incorporado para el tipo String. Pasa el valor como TmString*/
       { TmString ($1) }
+  | UNITVAL 
+      { TmUnit }
 
 ty :
     atomicTy
@@ -119,4 +123,5 @@ atomicTy :
       { TyNat }
   | STRING
       { TyString }
-
+  | UNIT
+      { TyUnit }

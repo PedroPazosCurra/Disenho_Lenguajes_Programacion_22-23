@@ -7,6 +7,7 @@ type ty =
   | TyArr of ty * ty
   | TyString
   | TyCartesian of ty * ty
+  | TyUnit
 ;;
 
 type 'a context =
@@ -30,6 +31,7 @@ type term =
   | TmConcat of term * term
   | TmTuple of term * term
   | TmTupleProj of term * int
+  | TmUnit
 ;;
 
 type comando =
@@ -65,6 +67,8 @@ let rec string_of_ty ty = match ty with
       "String"    
   | TyCartesian (ty1, ty2) ->  
     "(" ^ string_of_ty ty1 ^ " X " ^ string_of_ty ty2 ^ ")"
+  | TyUnit ->
+      "Unit"
 ;;
 
 exception Type_error of string
@@ -171,6 +175,10 @@ let rec typeof ctx tm = match tm with
       | (TyCartesian(a, b), 2) -> b 
       | _ -> raise (Type_error "Invalid position")
     )
+
+   (*T-Unit*)
+  | TmUnit ->
+      TyUnit
 ;;
 
 
@@ -215,6 +223,8 @@ let rec string_of_term = function
        "{" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ "}" 
   | TmTupleProj (t1, pos) -> 
       string_of_term t1 ^ "." ^ string_of_int pos 
+  | TmUnit ->
+      "unit"
 ;;
 
 let rec ldif l1 l2 = match l1 with
@@ -260,6 +270,8 @@ let rec free_vars tm = match tm with
       lunion (free_vars t1) (free_vars t2)
   | TmTupleProj (t1, pos) ->
       (free_vars t1)
+  | TmUnit ->
+      []
 ;;
 
 let rec fresh_name x l =
@@ -301,9 +313,15 @@ let rec subst x s tm = match tm with
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
   | TmFix t ->
        TmFix (subst x s t)
-  | TmString _ -> tm
+  | TmString t -> TmString t
   | TmConcat (t1, t2) ->
       TmConcat(subst x s t1, subst x s t2)
+  | TmTuple (t1, t2) ->
+      TmTuple(subst x s t1, subst x s t2)
+  | TmTupleProj(t, pos) ->
+      TmTupleProj(subst x s t, pos)
+  | TmUnit ->
+      TmUnit
 ;;
 
 let rec isnumericval tm = match tm with
@@ -319,6 +337,7 @@ let rec isval tm = match tm with
   | t when isnumericval t -> true
   | TmString _ -> true
   | TmTuple (t1, t2) -> (isval t1) && (isval t2)
+  | TmUnit -> true
   | _ -> false
 ;;
 
@@ -429,14 +448,10 @@ let rec eval1 vctx tm = match tm with
       TmTupleProj(t1', pos)
 
     (*E-Pair1*)
-  | TmTuple (t1, t2) ->
-      let t1' = eval1 vctx t1 in 
-      TmTuple(t1', t2)
-    
-    (*E-Pair2*)
-  | TmTuple (v1, t2) when isval v1 ->
-      let t2' = eval1 vctx t2 in 
-      TmTuple(v1, t2') 
+    | TmTuple (t1, t2) ->
+      if isval t1 then 
+        (let t2' = eval1 vctx t2 in TmTuple(t1, t2'))
+      else (let t1' = eval1 vctx t1 in TmTuple(t1', t2))
   
     (* TmVar *)
   | TmVar s ->

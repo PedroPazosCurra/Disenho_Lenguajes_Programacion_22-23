@@ -5,6 +5,7 @@ type ty =
   | TyArr of ty * ty
   | TyString
   | TyCartesian of ty * ty
+  | TyUnit
 ;;
 
 type 'a context =
@@ -28,6 +29,7 @@ type term =
   | TmConcat of term * term
   | TmTuple of term * term
   | TmTupleProj of term * int
+  | TmUnit 
 ;;
 
 type comando =
