@@ -31,7 +31,7 @@ Formal exposition with execution samples of new interpreter functionalities.
 
 		letrec sum : Nat -> Nat -> Nat =
 			lambda n : Nat. lambda m : Nat. if iszero n then m else succ (sum (pred n) m) in
-		sum 21 34
+		sum 21 34;;
 
 	The format is like:
 
@@ -47,7 +47,7 @@ Formal exposition with execution samples of new interpreter functionalities.
 	There's the possibility of assigning a free variable identifier to any value or term so we can use it in further expressions as an alias.
 	
 	Formatting:	[identifying name] = [term]	
-	Example:	x = if true then true else false
+	Example:	x = if true then true else false;;
 
 
 
@@ -60,18 +60,28 @@ Formal exposition with execution samples of new interpreter functionalities.
 	String type is available for users. As in many other languages, string variables are a succession of one or more characters.
 	They are summoned by "[string]". For instance, "great" is a valid string.
 
+	Example: "Hello World";;
+
 	Concatenation is also supported for strings. It's called through concat method.
 
 	Formatting: 	concat [str1] [str2]
-	Example:	concat "straw" "berry"
+	Example:	concat "straw" "berry";;
 
 
 
 2.4, 2.5: Pair and Tuple type
 
-	Tuples are finite ordered collections of items. They are currently implemented on the {item1{item2{...}}} format.
+	Tuples are finite ordered collections of items. They have the following format {item1, item2, ..., itemN}.
 
 	A pair is a determined concreteness of the tuple type in which the dimensionality of the tuple is only of two elements.
+
+		Pair Example: {if true then false else true, succ 0};;
+		Tuple Example: {"Hello", succ (succ 0), true};;
+
+	Projections are supported for tuples. The N-Projection operation result is the N component of the tuple, when it is fully evaluated.
+
+		Formatting: t.N, 	t = Tuple and N = Int
+		Example: x = {false, succ (succ 0), "Hello"}.2;; 
 
 
 2.6: Registers
