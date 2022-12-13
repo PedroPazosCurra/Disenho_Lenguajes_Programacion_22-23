@@ -30,6 +30,11 @@ type term =
   | TmTuple of term list
   | TmTupleProj of term * int
   | TmUnit 
+  | TmPrintNat of term
+  | TmPrintString of term
+  | TmPrintNewline of term
+  | TmReadNat of term
+  | TmReadString of term
 ;;
 
 type comando =
