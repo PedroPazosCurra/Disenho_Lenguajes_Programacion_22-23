@@ -4,7 +4,7 @@ type ty =
   | TyNat
   | TyArr of ty * ty
   | TyString
-  | TyCartesian of ty * ty
+  | TyTuple of ty list
   | TyUnit
 ;;
 
@@ -27,7 +27,7 @@ type term =
   | TmFix of term
   | TmString of string
   | TmConcat of term * term
-  | TmTuple of term * term
+  | TmTuple of term list
   | TmTupleProj of term * int
   | TmUnit 
 ;;

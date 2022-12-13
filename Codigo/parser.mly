@@ -103,7 +103,8 @@ atomicTerm :
       { TmUnit }
   | OPEN_BRACKET tupleFields CLOSE_BRACKET  /* Pattern-matching for tuple type, with format "{ [term], [term] }"                         */
       { TmTuple $2 }
-      
+  | OPEN_BRACKET tupleFields CLOSE_BRACKET DOT INTV
+      { TmTupleProj (TmTuple $2, $5) }
 tupleFields:
     term 
         { [$1] }
@@ -116,8 +117,6 @@ ty :
       { $1 }
   | atomicTy ARROW ty
       { TyArr ($1, $3) }
-  | atomicTy X atomicTy             /* Built-in for cartesian product. Detects the format "[type] x [type]" */
-      { TyCartesian ($1, $3) }
 
 atomicTy :
     LPAREN ty RPAREN  

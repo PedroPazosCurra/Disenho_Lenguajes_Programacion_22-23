@@ -6,7 +6,7 @@ type ty =
   | TyNat
   | TyArr of ty * ty
   | TyString
-  | TyCartesian of ty * ty      (* Added for cartesian implementation *)
+  | TyTuple of ty list   (* Added for Tuple type (2.5) *)
   | TyUnit                      (* Added for Unit type (2.9) *)
 ;;
 
@@ -29,7 +29,7 @@ type term =
   | TmFix of term                       (* Added for fix point combinator (2.1) *)
   | TmString of string	                (* Added for String type (2.3)          *)
   | TmConcat of term * term             (* Added for String type (2.3)          *)
-  | TmTuple of term * term              (* Added for Tuple type (2.5)           *)
+  | TmTuple of term list            (* Added for Tuple type (2.5)           *)
   | TmTupleProj of term * int           (* Added for Tuple type (2.5)           *)
   | TmUnit                              (* Added for Unit type (2.9)            *)
 (*| TmPrintNat of term *)               (* Added for I/O operations (2.10)      *)
@@ -58,7 +58,14 @@ let getbinding ctx x =      (* getbinding: "Search the bound term on 'x' free va
   List.assoc x ctx
 ;;
 
-
+(* Auxiliar function for tuple representation*)
+let string_of_tuple l =
+  let rec aux l1 str = match l1 with 
+    [] -> str ^ " }"
+    | h::[] -> aux [] (str ^ h)
+    | h::t -> aux t (str ^ h ^ ", ")
+  in aux l "{ "
+  
 (* TYPE MANAGEMENT (TYPING) *)
 
 (* "String_of_ty" method returns the string value of certain type. *)
@@ -71,8 +78,9 @@ let rec string_of_ty ty = match ty with
       "(" ^ string_of_ty ty1 ^ ")" ^ " -> " ^ "(" ^ string_of_ty ty2 ^ ")"
   | TyString ->
       "String"    
-  | TyCartesian (ty1, ty2) ->                               (* Added for cartesian: passed to string as "([type] X [type])" *)
-    "(" ^ string_of_ty ty1 ^ " X " ^ string_of_ty ty2 ^ ")"
+  | TyTuple types ->                               (* Added for cartesian: passed to string as "([type] X [type])" *)
+      let list = List.map (fun t -> string_of_ty t) types
+      in string_of_tuple list 
   | TyUnit ->                                               (* Added for unit: passed to string as "Unit" *)
       "Unit"
 ;;
@@ -170,19 +178,17 @@ let rec typeof ctx tm = match tm with
       )
 
     (*T-Tuple*)
-  | TmTuple (t1, t2) ->             (* Addition for tuple type:  tuple type is a cartesian product of both items *)
-    let tyT1 = typeof ctx t1 in
-    let tyT2 = typeof ctx t2 in
-    TyCartesian(tyT1, tyT2)
+  | TmTuple terms ->             (* Addition for tuple type:  tuple type is a cartesian product of both items *)
+      TyTuple (List.map (function t -> typeof ctx t) terms)
   
     (*T-Proj*)
-  | TmTupleProj (t1, pos) -> 
-    let ty1 = typeof ctx t1 in 
-    (match (ty1, pos) with
-      (TyCartesian(a, b), 1) -> a 
-      | (TyCartesian(a, b), 2) -> b 
-      | _ -> raise (Type_error "Invalid position")
-    )
+  | TmTupleProj (t, pos) -> (match typeof ctx t with 
+      
+      TyTuple terms -> (try List.nth terms (pos - 1) with
+          _ -> raise (Type_error "Invalid position")
+      )
+      | _ -> raise (Type_error "Invalid tuple")
+  )
 
    (*T-Unit*)
   | TmUnit ->           (* Addition for Unit type *)
@@ -228,10 +234,11 @@ let rec string_of_term = function
       s 
   | TmConcat (t1, t2) ->                                                        (* Added for string type: string a concat returns *)
        string_of_term t1 ^ string_of_term t2                                    (* the string of both inner terms (ideally string)*)
-  | TmTuple (t1, t2) ->                                                         (* Added for tuple type: corresponding string is: *)
-       "{" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ "}"                 (*  "{ item1_string, item2_string }" *)
-  | TmTupleProj (t1, pos) ->    
-      string_of_term t1 ^ "." ^ string_of_int pos 
+  | TmTuple terms ->                                                            (* Added for tuple type: corresponding string is: *)
+      let list = List.map (fun t -> string_of_term t) terms                        (*  "{ item1_string, item2_string }" *)
+      in string_of_tuple list                                                   
+  | TmTupleProj (terms, pos) ->    
+      string_of_term terms ^ "." ^ string_of_int pos 
   | TmUnit ->                                                                   (* Added for unit type: Unit terms string are "unit" *)
       "unit"
 ;;
@@ -277,10 +284,10 @@ let rec free_vars tm = match tm with
     []
   | TmConcat (t1, t2) ->
       lunion (free_vars t1) (free_vars t2)
-  | TmTuple (t1, t2) ->
-      lunion (free_vars t1) (free_vars t2)
-  | TmTupleProj (t1, pos) ->
-      (free_vars t1)
+  | TmTuple terms ->
+      List.fold_left (fun freeVars term -> lunion (free_vars term) freeVars) [] terms
+  | TmTupleProj (term, pos) ->
+      free_vars term
   | TmUnit ->
       []
 ;;
@@ -331,8 +338,8 @@ let rec subst x s tm = match tm with
   | TmString t -> TmString t
   | TmConcat (t1, t2) ->
       TmConcat(subst x s t1, subst x s t2)
-  | TmTuple (t1, t2) ->
-      TmTuple(subst x s t1, subst x s t2)
+  | TmTuple terms ->
+      TmTuple (List.map (fun t -> subst x s t) terms)
   | TmTupleProj(t, pos) ->
       TmTupleProj(subst x s t, pos)
   | TmUnit ->
@@ -351,7 +358,7 @@ let rec isval tm = match tm with
   | TmAbs _ -> true
   | t when isnumericval t -> true
   | TmString _ -> true
-  | TmTuple (t1, t2) -> (isval t1) && (isval t2)
+  | TmTuple terms-> List.for_all (fun t -> isval t) terms
   | TmUnit -> true
   | _ -> false
 ;;
@@ -450,11 +457,11 @@ let rec eval1 vctx tm = match tm with
     let t1' = eval1 vctx t1 in
     TmConcat (t1', t2)
 
-    (*E- PairBeta*)
-  | TmTupleProj (t, pos) when (isval t) -> (match (t, pos) with
-      TmTuple(v1, v2), 1 -> v1 
-      | TmTuple(v1, v2), 2 -> v2
-      | _ -> raise (Type_error "Invalid position")
+    (*E- ProjTuple*)
+  | TmTupleProj (t, pos) when (isval t) -> (match t with
+      TmTuple terms -> (try List.nth terms (pos - 1) with 
+        _ -> raise NoRuleApplies)  
+      | _ -> raise (Type_error "Term is not a tuple")
   )
 
       (*E-Proj*)
@@ -462,11 +469,14 @@ let rec eval1 vctx tm = match tm with
       let t1' = eval1 vctx t1 in 
       TmTupleProj(t1', pos)
 
-    (*E-Pair1*)
-    | TmTuple (t1, t2) ->
-      if isval t1 then 
-        (let t2' = eval1 vctx t2 in TmTuple(t1, t2'))
-      else (let t1' = eval1 vctx t1 in TmTuple(t1', t2))
+    (*E-Tuple*)
+    | TmTuple terms ->
+        let rec evaluate terms = (match terms with 
+          [] -> raise NoRuleApplies
+          | v::t when isval v -> let t' = evaluate t in v::t'
+          | t1::t -> let t1' = eval1 vctx t1 in t1'::t
+        )
+        in let terms' = evaluate terms in TmTuple terms' 
   
     (* TmVar *)
   | TmVar s ->
