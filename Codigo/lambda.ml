@@ -32,11 +32,11 @@ type term =
   | TmTuple of term list                (* Added for Tuple type (2.5)           *)
   | TmTupleProj of term * int           (* Added for Tuple type (2.5)           *)
   | TmUnit                              (* Added for Unit type (2.9)            *)
-(*| TmPrintNat of term *)               (* Added for I/O operations (2.10)      *)
-(*| TmPrintString of term *)            (* Added for I/O operations (2.10)      *)
-(*| TmPrintNewline of term *)           (* Added for I/O operations (2.10)      *)
-(*| TmReadNat *)                        (* Added for I/O operations (2.10)      *)
-(*| TmReadString *)                     (* Added for I/O operations (2.10)      *)
+  | TmPrintNat of term                  (* Added for I/O operations (2.10)      *)
+  | TmPrintString of term               (* Added for I/O operations (2.10)      *)
+  | TmPrintNewline of term              (* Added for I/O operations (2.10)      *)
+  | TmReadNat of term                   (* Added for I/O operations (2.10)      *)
+  | TmReadString of term                (* Added for I/O operations (2.10)      *)
 ;;
 
 type comando =                          (* Added for global context (2.2)                          *)
@@ -193,6 +193,30 @@ let rec typeof ctx tm = match tm with
    (*T-Unit*)
   | TmUnit ->           (* Addition for Unit type *)
       TyUnit
+  
+  (* print_nat *)
+  | TmPrintNat t ->
+        if typeof ctx t = TyNat then TyUnit
+        else raise (Type_error "argument of print_nat is not a natural number")
+  
+  (* print_string *)
+  | TmPrintString t ->
+        if typeof ctx t = TyString then TyUnit
+        else raise (Type_error "argument of print_string is not a string")
+    (* print_newline *)
+  | TmPrintNewline t ->
+      if typeof ctx t = TyUnit then TyUnit
+      else raise (Type_error "argument of print_newline is not a unit")
+  
+    (* read_nat *)
+  | TmReadNat t ->
+      if typeof ctx t = TyUnit then TyNat
+      else raise (Type_error "argument of read_nat is not a unit")
+  
+    (* read_string *)
+  | TmReadString t ->
+      if typeof ctx t = TyUnit then TyString
+      else raise (Type_error "argument of read_string is not a unit")
 ;;
 
 
@@ -241,6 +265,16 @@ let rec string_of_term = function
       string_of_term terms ^ "." ^ string_of_int pos 
   | TmUnit ->                                                                   (* Added for unit type: Unit terms string are "unit"                      *)
       "unit"
+  | TmPrintNat t  ->
+      "print_nat(" ^ string_of_term t ^ ")"
+  | TmPrintString t ->
+      "print_string(" ^ string_of_term t ^ ")"
+  | TmPrintNewline t ->
+      "print_newline(" ^ string_of_term t ^ ")"
+  | TmReadNat t ->
+      "read_nat(" ^ string_of_term t ^ ")"
+  | TmReadString t ->
+      "read_string(" ^ string_of_term t ^ ")"
 ;;
 
 let rec ldif l1 l2 = match l1 with
@@ -290,6 +324,16 @@ let rec free_vars tm = match tm with
       free_vars term
   | TmUnit ->
       []
+  | TmPrintNat term  ->
+      free_vars term
+  | TmPrintString term ->
+      free_vars term
+  | TmPrintNewline term ->
+      free_vars term
+  | TmReadNat term ->
+      free_vars term
+  | TmReadString term ->
+      free_vars term
 ;;
 
 
@@ -348,6 +392,16 @@ let rec subst x s tm = match tm with
       TmTupleProj(subst x s t, pos)                     (*|				                    	*)
   | TmUnit ->                                           (*  Addition for Unit type terms (2.9)  *)
       TmUnit
+  | TmPrintNat t  ->
+      TmPrintNat (subst x s t)
+  | TmPrintString t ->
+      TmPrintString (subst x s t)
+  | TmPrintNewline t ->
+      TmPrintNewline (subst x s t)
+  | TmReadNat t ->
+      TmReadNat (subst x s t)
+  | TmReadString t ->
+      TmReadString (subst x s t)
 ;;
 
 
