@@ -31,8 +31,8 @@ rule token = parse
   | ','         { COMA }
   | ';'         { SEMICOLON }
   | ";;"        { END_PROCESSING }
-  | '{'         { OPEN_TUPLE }
-  | '}'         { CLOSE_TUPLE }
+  | '{'         { OPEN_BRACKET }
+  | '}'         { CLOSE_BRACKET }
   | '.'         { DOT }
   | '='         { EQ }
   | ':'         { COLON }
@@ -43,4 +43,3 @@ rule token = parse
                 { STRINGV (Lexing.lexeme lexbuf) }
   | eof         { raise End_of_file }
   | _           { raise Lexical_error } 
-
