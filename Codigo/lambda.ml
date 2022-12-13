@@ -6,11 +6,11 @@ type ty =
   | TyNat
   | TyArr of ty * ty
   | TyString
-  | TyCartesian of ty * ty
-  | TyUnit
+  | TyCartesian of ty * ty      (* Added for cartesian implementation *)
+  | TyUnit                      (* Added for Unit type (2.9) *)
 ;;
 
-type 'a context =
+type 'a context =               (* Added for global context (2.2). A context is a list of "string * [anything]" items. *)
   (string * 'a) list
 ;;
 
@@ -26,36 +26,42 @@ type term =
   | TmAbs of string * ty * term
   | TmApp of term * term
   | TmLetIn of string * term * term
-  | TmFix of term
-  | TmString of string	
-  | TmConcat of term * term
-  | TmTuple of term * term
-  | TmTupleProj of term * int
-  | TmUnit
+  | TmFix of term                       (* Added for fix point combinator (2.1) *)
+  | TmString of string	                (* Added for String type (2.3)          *)
+  | TmConcat of term * term             (* Added for String type (2.3)          *)
+  | TmTuple of term * term              (* Added for Tuple type (2.5)           *)
+  | TmTupleProj of term * int           (* Added for Tuple type (2.5)           *)
+  | TmUnit                              (* Added for Unit type (2.9)            *)
+(*| TmPrintNat of term *)               (* Added for I/O operations (2.10)      *)
+(*| TmPrintString of term *)            (* Added for I/O operations (2.10)      *)
+(*| TmPrintNewline of term *)           (* Added for I/O operations (2.10)      *)
+(*| TmReadNat *)                        (* Added for I/O operations (2.10)      *)
+(*| TmReadString *)                     (* Added for I/O operations (2.10)      *)
 ;;
 
-type comando =
-    Eval of term
-  | Bind of string * term
+type comando =                          (* Added for global context (2.2) *)
+    Eval of term                        (*  Given the input from the command line, the whole input*)
+  | Bind of string * term               (*  it should be evaluated or binded *)
 
 
 (* CONTEXT MANAGEMENT *)
 
-let emptyctx =
+let emptyctx =      (* Empty context -> empty list *)
   []
 ;;
 
-let addbinding ctx x bind =
+let addbinding ctx x bind = (* addbinding: "Assign 'x' to 'bind' in 'ctx' context" *)
   (x, bind) :: ctx
 ;;
 
-let getbinding ctx x =
+let getbinding ctx x =      (* getbinding: "Search the bound term on 'x' free variable in 'ctx' context" *)
   List.assoc x ctx
 ;;
 
 
 (* TYPE MANAGEMENT (TYPING) *)
 
+(* "String_of_ty" method returns the string value of certain type. *)
 let rec string_of_ty ty = match ty with
     TyBool ->
       "Bool"
@@ -65,15 +71,17 @@ let rec string_of_ty ty = match ty with
       "(" ^ string_of_ty ty1 ^ ")" ^ " -> " ^ "(" ^ string_of_ty ty2 ^ ")"
   | TyString ->
       "String"    
-  | TyCartesian (ty1, ty2) ->  
+  | TyCartesian (ty1, ty2) ->                               (* Added for cartesian: passed to string as "([type] X [type])" *)
     "(" ^ string_of_ty ty1 ^ " X " ^ string_of_ty ty2 ^ ")"
-  | TyUnit ->
+  | TyUnit ->                                               (* Added for unit: passed to string as "Unit" *)
       "Unit"
 ;;
 
 exception Type_error of string
 ;;
 
+
+(* "Typeof" method returns the type of certain term. *)
 let rec typeof ctx tm = match tm with
     (* T-True *)
     TmTrue ->
@@ -139,8 +147,8 @@ let rec typeof ctx tm = match tm with
       typeof ctx' t2
       
       (* T-Fix *)
-  | TmFix t1 ->
-        let tyT1 = typeof ctx t1 in
+  | TmFix t1 ->                                 (* Addition for recursion: a Fix term comes from the "letrec" command.                            *)
+        let tyT1 = typeof ctx t1 in             (*  In this concrete match, the type of the Fix term is the specified type on the letrec parameter*)
         (match tyT1 with
             TyArr (tyT11, tyT12) ->
                 if tyT11 = tyT12 then tyT12
@@ -149,20 +157,20 @@ let rec typeof ctx tm = match tm with
          )
 
     (*T-String*)
-  | TmString _ ->
+  | TmString _ ->     (* Addition for string type *)
      TyString
   
     (*T-Concat*)
-  | TmConcat (t1, t2) ->
-      let tyT1 = typeof ctx t1 in
+  | TmConcat (t1, t2) ->            (* Functionality added for string type:                          *)
+      let tyT1 = typeof ctx t1 in   (*  takes both terms and type is string only if both are strings *)
       let tyT2 = typeof ctx t2 in
       (match (tyT1, tyT2) with 
           (TyString, TyString) -> TyString
         | _ -> raise (Type_error "arguments of concat are not strings") 
       )
 
-    (*T-Pair*)
-  | TmTuple (t1, t2) ->
+    (*T-Tuple*)
+  | TmTuple (t1, t2) ->             (* Addition for tuple type:  tuple type is a cartesian product of both items *)
     let tyT1 = typeof ctx t1 in
     let tyT2 = typeof ctx t2 in
     TyCartesian(tyT1, tyT2)
@@ -177,13 +185,14 @@ let rec typeof ctx tm = match tm with
     )
 
    (*T-Unit*)
-  | TmUnit ->
+  | TmUnit ->           (* Addition for Unit type *)
       TyUnit
 ;;
 
 
 (* TERMS MANAGEMENT (EVALUATION) *)
 
+(* "string_of_term" method returns the corresponding string of certain term. *)
 let rec string_of_term = function
     TmTrue ->
       "true"
@@ -213,17 +222,17 @@ let rec string_of_term = function
       "(" ^ string_of_term t1 ^ " " ^ string_of_term t2 ^ ")"
   | TmLetIn (s, t1, t2) ->
       "let " ^ s ^ " = " ^ string_of_term t1 ^ " in " ^ string_of_term t2
-  | TmFix termino ->
-      "(fix " ^ string_of_term termino ^ ")" 
-  | TmString s ->
-      s
-  | TmConcat (t1, t2) ->
-       string_of_term t1 ^ string_of_term t2
-  | TmTuple (t1, t2) -> 
-       "{" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ "}" 
-  | TmTupleProj (t1, pos) -> 
+  | TmFix termino ->                                                            (* Added for fix point combinator: returns "(fix [string_of_inner_term])" *)
+      "(fix " ^ string_of_term termino ^ ")"                                   
+  | TmString s ->                                                               (* Added for string type: returns the own string value *)
+      s 
+  | TmConcat (t1, t2) ->                                                        (* Added for string type: string a concat returns *)
+       string_of_term t1 ^ string_of_term t2                                    (* the string of both inner terms (ideally string)*)
+  | TmTuple (t1, t2) ->                                                         (* Added for tuple type: corresponding string is: *)
+       "{" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ "}"                 (*  "{ item1_string, item2_string }" *)
+  | TmTupleProj (t1, pos) ->    
       string_of_term t1 ^ "." ^ string_of_int pos 
-  | TmUnit ->
+  | TmUnit ->                                                                   (* Added for unit type: Unit terms string are "unit" *)
       "unit"
 ;;
 
@@ -237,6 +246,8 @@ let rec lunion l1 l2 = match l1 with
   | h::t -> if List.mem h l2 then lunion t l2 else h::(lunion t l2)
 ;;
 
+
+(* "free_vars" method searchs recursively the irreducible terms of an expression and clears their memory by assigning them to an empty item *)
 let rec free_vars tm = match tm with
     TmTrue ->
       []
@@ -274,10 +285,14 @@ let rec free_vars tm = match tm with
       []
 ;;
 
+
+(* "fresh_name" method searches a free_variable name that is not currently assigned in the global context. *)
 let rec fresh_name x l =
   if not (List.mem x l) then x else fresh_name (x ^ "'") l
 ;;
-    
+
+
+(* "subst" method performs lambda substitution. *)
 let rec subst x s tm = match tm with
     TmTrue ->
       TmTrue
