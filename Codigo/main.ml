@@ -7,21 +7,6 @@ open Parser;;
 open Lexer;;
 
 
-(* Método process_line:                                                                                         *)
-(*    Implementado para la funcionalidad de expresiones multilínea (1.1).                                       *)
-(*    Para diferenciar cada uno de los términos a evaluar, hemos optado por                                     *)
-(*    establecer como separador la cadena ";;" para mantener similaridad con muchas otras interfaces similares. *)
-
-let rec process_line line =
-  if String.contains line ';' then s token (from_string (String.sub line 0 (1 + String.index line ';')))
-  else begin
-    flush stdout;
-    process_line (line ^ "\n" ^ read_line ())
-  end
-
-
-
-
 (* Método top_level_loop: Bucle iterativo superior de la interfaz.                                                 *)
 (*  Como implementación de la funcionalidad de expresiones multilínea (1.1), cada una de las frases que se procesan*)
 (*  son determinadas en base al separador definido ";;".                                                           *)
@@ -41,7 +26,7 @@ let top_level_loop () =
     print_string ">> ";
     flush stdout;
     try
-      let c = process_line (String.trim (read_line ()))  in
+      let c = s token (Lexing.from_channel stdin)  in
       loop (execute (vctx, tctx) c)
     with
        Lexical_error ->

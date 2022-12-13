@@ -50,9 +50,9 @@
 
  
 s : 
-    STRINGV EQ term END_PROCESSING EOF    /*| Para la funcionalidad de contexto, se detecta el formato "[nombre] = [termino];;"  */
+    STRINGV EQ term END_PROCESSING        /*| Para la funcionalidad de contexto, se detecta el formato "[nombre] = [termino];;"  */
        { Bind ($1, $3) }                  /*| y se llama a la función correspondiente para hacer la asociación.                  */
-  | term END_PROCESSING EOF
+  | term END_PROCESSING
       { Eval $1 }
 
 term :

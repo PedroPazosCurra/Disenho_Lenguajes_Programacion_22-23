@@ -27,7 +27,7 @@ rule token = parse
   | '('         { LPAREN }
   | ')'         { RPAREN }
   | ','         { COMA }
-  | ';'        { END_PROCESSING }
+  | ";;"        { END_PROCESSING }
   | '{'         { OPEN_TUPLE }
   | '}'         { CLOSE_TUPLE }
   | '.'         { DOT }
@@ -38,6 +38,6 @@ rule token = parse
   | ['0'-'9']+  { INTV (int_of_string (Lexing.lexeme lexbuf)) }
   | ['a'-'z']['a'-'z' '_' '0'-'9']*
                 { STRINGV (Lexing.lexeme lexbuf) }
-  | eof         { EOF }
+  | eof         { raise End_of_file }
   | _           { raise Lexical_error } 
 
