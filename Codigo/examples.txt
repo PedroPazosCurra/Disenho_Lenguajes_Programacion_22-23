@@ -56,13 +56,3 @@ fib 5;
 concat "Ho" "la";
 let c = L x:String. concat "ho" x in c "la";
 let c = L x:String. (L y:String. concat x y) in c "hola " "mundo";
-
-
-(* I/O *)
-print_string "Hola" ;;
-print_string (concat "Ho" "la") ;;
-print_nat 5 ;;
-print_nat (succ 4) ;;
-print_newline unit ;;
-read_nat unit;;
-read_string unit;;
