@@ -78,7 +78,7 @@ let rec string_of_ty ty = match ty with
       "(" ^ string_of_ty ty1 ^ ")" ^ " -> " ^ "(" ^ string_of_ty ty2 ^ ")"
   | TyString ->
       "String"    
-  | TyTuple types ->                                        (* Added for cartesian: passed to string as "([type] X [type])" *)
+  | TyTuple types ->                                        (* Added for tuple type: passed to string as "{type1, type2,..., typeN}" *)
       let list = List.map (fun t -> string_of_ty t) types
       in string_of_tuple list 
   | TyUnit ->                                               (* Added for unit: passed to string as "Unit" *)
@@ -178,11 +178,11 @@ let rec typeof ctx tm = match tm with
       )
 
     (*T-Tuple*)
-  | TmTuple terms ->             (* Addition for tuple type:  tuple type is a cartesian product of both items *)
+  | TmTuple terms ->             (* Addition for tuple type:  tuple type is a cartesian product of all terms *)
       TyTuple (List.map (function t -> typeof ctx t) terms)
   
     (*T-Proj*)
-  | TmTupleProj (t, pos) -> (match typeof ctx t with 
+  | TmTupleProj (t, pos) -> (match typeof ctx t with        (* Addition for tuple projection type: it returns the type of the term of the given position  *)
       
       TyTuple terms -> (try List.nth terms (pos - 1) with
           _ -> raise (Type_error "Invalid position")
@@ -259,7 +259,7 @@ let rec string_of_term = function
   | TmConcat (t1, t2) ->                                             (* Added for string type: string a concat returns                         *)
        string_of_term t1 ^ string_of_term t2                         (* the string of both inner terms (ideally string)                        *)
   | TmTuple terms ->                                                 (* Added for tuple type: corresponding string is:                         *)
-      let list = List.map (fun t -> string_of_term t) terms          (*  "{ item1_string, item2_string }"                                      *)
+      let list = List.map (fun t -> string_of_term t) terms          (*  "{ item1_string, item2_string,..., itemN_string }"                    *)
       in string_of_tuple list                                                   
   | TmTupleProj (terms, pos) ->    
       string_of_term terms ^ "." ^ string_of_int pos 
@@ -381,15 +381,15 @@ let rec subst x s tm = match tm with
            then TmLetIn (y, subst x s t1, subst x s t2)
            else let z = fresh_name y (free_vars t2 @ fvs) in
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
-  | TmFix t ->						                    (*--Addition for Fix term (2.2) 		*)
-       TmFix (subst x s t)				                (*--Addition for String type terms (2.3)*)
-  | TmString t -> TmString t				            (*| 				  	                *)
+  | TmFix t ->						                        (* --Addition for Fix term (2.2) *)
+       TmFix (subst x s t)
+  | TmString t -> TmString t				              (* --Addition for String type terms (2.3) *)
   | TmConcat (t1, t2) ->
       TmConcat(subst x s t1, subst x s t2)
-  | TmTuple terms ->				                    (*--Addition for Tuple type terms (2.5)	*)
-      TmTuple (List.map (fun t -> subst x s t) terms)   (*|                 					*)
-  | TmTupleProj(t, pos) ->				                (*|					                    *)
-      TmTupleProj(subst x s t, pos)                     (*|				                    	*)
+  | TmTuple terms ->				                            (*--Addition for Tuple type terms (2.5)	 *)
+      TmTuple (List.map (fun t -> subst x s t) terms)   (*|                 					           *)
+  | TmTupleProj(t, pos) ->				                      (*--Addition for Tuple projection type (2.5) *)
+      TmTupleProj(subst x s t, pos)                     (*|				                    	         *)
   | TmUnit ->                                           (*--Addition for Unit type terms (2.9)  *)
       TmUnit                                            (*|                                     *)
   | TmPrintNat t  ->                                    (*--Addition for IO operations          *)

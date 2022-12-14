@@ -125,23 +125,23 @@ Formal exposition with execution samples of new interpreter functionalities.
 	
 		print_nat: Prints a Nat term on the console.
 		
-			print_nat 5
+			print_nat 5;;
 	
 		print_string: Prints a String term on the console.
 		
-			print_string "Hi"
+			print_string "Hi";;
 	
 		print_newline: Prints a newline character, leaping one line.
 		
-			print_newline unit
+			print_newline unit;;
 	
 		read_nat: Given a natural number, entered by command line, assigns it to a Nat term.
 		
-			read_nat unit
+			read_nat unit;;
 	
 		read_string: Given a string, entered by command line, assigns it to a String term.
 		
-			read_string unit
+			read_string unit;;
 	
 	Batch compiler mode:
 	

@@ -42,7 +42,7 @@
 %token PRINT_NEWLINE         /* 2.10- IO operations*/
 %token READ_NAT              /* 2.10- IO operations*/
 %token READ_STRING           /* 2.10- IO operations*/
-%token SEMICOLON
+%token SEMICOLON             /* 2.9 Unit type*/
 
 %token <int> INTV
 %token <string> STRINGV
@@ -102,7 +102,7 @@ appTerm :
 auxTerm: 
     auxTerm DOT INTV
         { TmTupleProj ($1, $3) }
-    | atomicTerm SEMICOLON atomicTerm
+    | atomicTerm SEMICOLON atomicTerm           /* For term sequence, it's detected the format "t1; t2" */
       { TmApp ((TmAbs ("x", TyUnit, $3)), $1) }
     | atomicTerm
         { $1 }
@@ -126,13 +126,13 @@ atomicTerm :
       { TmString ($1) }
   | UNITVAL                         /* Built-in for Unit type. */
       { TmUnit }
-  | OPEN_BRACKET tupleFields CLOSE_BRACKET  /* Pattern-matching for tuple type, with format "{ [term], [term] }"                         */
+  | OPEN_BRACKET tupleFields CLOSE_BRACKET  /* Pattern-matching for tuple type, with format "{ terms }"                         */
       { TmTuple $2 }
 
 tupleFields:
     term 
         { [$1] }
-  | term COMA tupleFields
+  | term COMA tupleFields   /* Pattern-matching for tuple terms, with format "term1, term2,..., termN"  */
         { $1 :: $3 }
 
 
@@ -153,11 +153,11 @@ atomicTy :
       { TyString }
   | UNIT                            /* Built-in for Unit type. */
       { TyUnit }
-  | OPEN_BRACKET tupleTypes CLOSE_BRACKET           /* Built-in type for cartesian product. Detects the format "[type] x [type]" */
+  | OPEN_BRACKET tupleTypes CLOSE_BRACKET           /* Built-in type for tuple type. Detects the format "{ types }" */
       { TyTuple ($2) }
       
 tupleTypes:
     atomicTy
     { [$1] }
-  | atomicTy COMA tupleTypes
+  | atomicTy COMA tupleTypes    /* Pattern-matching for tuple types, with format "type1, type2,..., typeN"  */
     { $1 :: $3 }
