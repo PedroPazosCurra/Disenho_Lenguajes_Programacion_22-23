@@ -390,8 +390,8 @@ let rec subst x s tm = match tm with
       TmTuple (List.map (fun t -> subst x s t) terms)   (*|                 					*)
   | TmTupleProj(t, pos) ->				                (*|					                    *)
       TmTupleProj(subst x s t, pos)                     (*|				                    	*)
-  | TmUnit ->                                           (*  Addition for Unit type terms (2.9)  *)
-      TmUnit
+  | TmUnit ->                                           (*|  Addition for Unit type terms (2.9) *)
+      TmUnit                                            (*|                                     *)
   | TmPrintNat t  ->
       TmPrintNat (subst x s t)
   | TmPrintString t ->
@@ -542,12 +542,58 @@ let rec eval1 vctx tm = match tm with
           | t1::t -> let t1' = eval1 vctx t1 in t1'::t          (* |                                	                        *)
         )                                                       (* |                                	                        *)
         in let terms' = evaluate terms in TmTuple terms'        (* |                                	                        *)
+        
+
+      
   
-    (* TmVar *)
-  | TmVar s ->                 
-      getbinding vctx s
-  | _ ->
-      raise NoRuleApplies
+  | TmPrintNat TmZero  ->                           (* | Additions for Tuple type (2.5)                          *)
+        (print_int 0; TmUnit)                       (* |                                                         *)
+                                                    (* | When print_nat is evaluated, first match ocurs at TmZero*)
+  | TmPrintNat (TmSucc t)  ->                       (* | "0" prints out in that case.                            *)
+      (let rec f n = function                       (* |                                                         *)
+        TmZero -> print_int n                       (* | Then, the value is taken if it's the                    *)
+      | TmSucc s -> f (n + 1) s                     (* | successor or predecessor a natural number. In that case:*)
+      | _ -> ()                                     (* | - 0 is printed if its value is 0                        *)
+      in f t, TmUnit)                               (* | - Next number is printed if it's a successor            *)
+                                                    (* | - Previous number is printed if it's a predecessor      *)
+  | TmPrintNat (TmPred t)  ->                       (* |                                                         *)
+      (let rec f n = function                       (* | If it matchs any other term the inner expression        *)
+        TmZero -> print_int n                       (* | is evaluated for looking for coincidences               *)
+      | TmSucc s -> f (n - 1) s                     (* |                                                         *)
+      | _ -> ()                                     (* |                                                         *)
+                                                    (* |                                                         *)
+      in f t, TmUnit)                               (* |                                                         *)
+  | TmPrintNat t  ->                                (* |                                                         *)
+        let t' = eval1 ctx t in TmPrintNat t1'      (* |                                                         *)
+                                                    (* |                                                         *)
+  | TmPrintString (TmString s) ->                   (* | When print_string is evaluated, inner expression        *)
+        (print_string s; TmUnit)                    (* | is evaluated:                                           *)
+                                                    (* | - If it's a string, it's printed out                    *)
+  | TmPrintString t ->                              (* | - If it's not, inner expression is evaluated further    *)
+     ler t' = eval1 ctx t in TmPrintString t'       (* |        until a string is found                          *)
+                                                    (* |                                                         *)
+  | TmPrintNewline t ->                             (* | When print_newline is evaluated, a newline is printed.  *)
+        (print_newline (); TmUnit)                  (* |                                                         *)
+                                                    (* |                                                         *)
+  | TmReadNat TmUnit ->                             (* | In read_nat, the input is parsed and results in         *) 
+        let rec f = function                        (* |   - a TmZero item if it's 0                             *)
+            0 -> TmZero                             (* |   - The succ. of the prev. (the number) if it's a num.  *)
+         |  n -> TmSucc (f (n-1))                   (* |   - If it's any other term, it's looked further         *)
+         in f (int_of_string (read_line ()))        (* |                                                         *)
+                                                    (* |                                                         *)
+  | TmReadNat t ->                                  (* |                                                         *)
+        let t' = eval1 ctx t in TmReadNat t'        (* |                                                         *)
+  | TmReadString TmUnit ->                          (* | In read_string, the input is parsed and results in      *)
+        (let s = read_line () in TmString s)        (* |   - a TmString item if it's a TmUnit                    *)
+                                                    (* |   - If it's any other term, it's looked further         *)
+  | TmReadString t ->                               (* |                                                         *)
+        let t' = eval1 ctx t in TmReadString t'     (* |                                                         *)
+  
+    (* TmVar *)                 (*| Addition for context *)
+  | TmVar s ->                  (*|                      *)
+      getbinding vctx s         (*|                      *)
+  | _ ->                       
+      raise NoRuleApplies      
 ;;
 
 
