@@ -7,7 +7,6 @@ fib = letrec fib: Nat -> Nat =
 	if iszero (pred (pred n)) then 1 else sum (fib (pred (pred n))) (fib (pred n)) in fib;;
 
 
-(print_string "Dime que termino de fibonacci quieres") ; 
-(print_string ("El resultado es");
- print_nat(fib (read_nat unit))));;
+(print_string "Soy la calculadora de terminos de fibonacci") ; ((print_string "Dime un termino y lo saco en un momento"); (fib (read_nat unit)));;
+
 
