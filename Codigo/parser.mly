@@ -73,30 +73,40 @@ term :
       { TmLetIn ($2, $4, $6) }
   | LETREC STRINGV COLON ty EQ term IN term               /* For recursivity, it's detected the format "letrec [name]. [types] = [term] in [term]"   */
       { TmLetIn ($2, TmFix (TmAbs ($2, $4, $6)), $8) }    
+
       
 appTerm :
-    atomicTerm
+    auxTerm
       { $1 }
-  | SUCC atomicTerm
+  | SUCC auxTerm
       { TmSucc $2 }
-  | PRED atomicTerm
+  | PRED auxTerm
       { TmPred $2 }
-  | ISZERO atomicTerm
+  | ISZERO auxTerm
       { TmIsZero $2 }
-  | CONCAT atomicTerm atomicTerm    /* For strings concatenation, it's detected the format "concat [atomic term] [atomic term]" */
+  | CONCAT auxTerm auxTerm    /* For strings concatenation, it's detected the format "concat [atomic term] [atomic term]" */
       { TmConcat ($2, $3) }
-  | PRINT_NAT atomicTerm
+  | PRINT_NAT auxTerm
       { TmPrintNat $2 }
-  | PRINT_STRING atomicTerm
+  | PRINT_STRING auxTerm
       { TmPrintString $2 }
-  | PRINT_NEWLINE atomicTerm
+  | PRINT_NEWLINE auxTerm
       { TmPrintNewline $2 }
-  | READ_NAT atomicTerm
-      { Tm ReadNat $2 }
-  | READ_STRING atomicTerm
-      { Tm ReadString $2 }
-  | appTerm atomicTerm
+  | READ_NAT auxTerm
+      { TmReadNat $2 }
+  | READ_STRING auxTerm
+      { TmReadString $2 }
+  | appTerm auxTerm
       { TmApp ($1, $2) }
+
+auxTerm: 
+    auxTerm DOT INTV
+        { TmTupleProj ($1, $3) }
+    | atomicTerm SEMICOLON atomicTerm
+      { TmApp ((TmAbs ("x", TyUnit, $3)), $1) }
+    | atomicTerm
+        { $1 }
+
 
 atomicTerm :
     LPAREN term RPAREN
@@ -118,8 +128,6 @@ atomicTerm :
       { TmUnit }
   | OPEN_BRACKET tupleFields CLOSE_BRACKET  /* Pattern-matching for tuple type, with format "{ [term], [term] }"                         */
       { TmTuple $2 }
-  | OPEN_BRACKET tupleFields CLOSE_BRACKET DOT INTV
-      { TmTupleProj (TmTuple $2, $5) }
 
 tupleFields:
     term 
