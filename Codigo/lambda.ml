@@ -194,7 +194,7 @@ let rec typeof ctx tm = match tm with
   | TmUnit ->           (* Addition for Unit type *)
       TyUnit
   
-  (* print_nat *)
+  (* print_nat *)                                                           (* Additions for IO operations: Input type checking *)
   | TmPrintNat t ->
         if typeof ctx t = TyNat then TyUnit
         else raise (Type_error "argument of print_nat is not a natural number")
@@ -252,21 +252,21 @@ let rec string_of_term = function
       "(" ^ string_of_term t1 ^ " " ^ string_of_term t2 ^ ")"
   | TmLetIn (s, t1, t2) ->
       "let " ^ s ^ " = " ^ string_of_term t1 ^ " in " ^ string_of_term t2
-  | TmFix termino ->                                                            (* Added for fix point combinator: returns "(fix [string_of_inner_term])" *)
+  | TmFix termino ->                                                 (* Added for fix point combinator: returns "(fix [string_of_inner_term])" *)
       "(fix " ^ string_of_term termino ^ ")"                                   
-  | TmString s ->                                                               (* Added for string type: returns the own string value                    *)
+  | TmString s ->                                                    (* Added for string type: returns the own string value                    *)
       s 
-  | TmConcat (t1, t2) ->                                                        (* Added for string type: string a concat returns                         *)
-       string_of_term t1 ^ string_of_term t2                                    (* the string of both inner terms (ideally string)                        *)
-  | TmTuple terms ->                                                            (* Added for tuple type: corresponding string is:                         *)
-      let list = List.map (fun t -> string_of_term t) terms                     (*  "{ item1_string, item2_string }"                                      *)
+  | TmConcat (t1, t2) ->                                             (* Added for string type: string a concat returns                         *)
+       string_of_term t1 ^ string_of_term t2                         (* the string of both inner terms (ideally string)                        *)
+  | TmTuple terms ->                                                 (* Added for tuple type: corresponding string is:                         *)
+      let list = List.map (fun t -> string_of_term t) terms          (*  "{ item1_string, item2_string }"                                      *)
       in string_of_tuple list                                                   
   | TmTupleProj (terms, pos) ->    
       string_of_term terms ^ "." ^ string_of_int pos 
-  | TmUnit ->                                                                   (* Added for unit type: Unit terms string are "unit"                      *)
+  | TmUnit ->                                                        (* Added for unit type: Unit terms string are "unit"                      *)
       "unit"
-  | TmPrintNat t  ->
-      "print_nat(" ^ string_of_term t ^ ")"
+  | TmPrintNat t  ->                                                 (* Added for IO operations: they are printed as                           *)
+      "print_nat(" ^ string_of_term t ^ ")"                          (*    "[operations]([inner to string])"                                   *)
   | TmPrintString t ->
       "print_string(" ^ string_of_term t ^ ")"
   | TmPrintNewline t ->
@@ -381,27 +381,27 @@ let rec subst x s tm = match tm with
            then TmLetIn (y, subst x s t1, subst x s t2)
            else let z = fresh_name y (free_vars t2 @ fvs) in
                 TmLetIn (z, subst x s t1, subst x s (subst y (TmVar z) t2))
-  | TmFix t ->						                    (* Addition for Fix term (2.2) 		*)
-       TmFix (subst x s t)				                (*| Addition for String type terms (2.3)*)
-  | TmString t -> TmString t				            (*| 				  	*)
+  | TmFix t ->						                    (*--Addition for Fix term (2.2) 		*)
+       TmFix (subst x s t)				                (*--Addition for String type terms (2.3)*)
+  | TmString t -> TmString t				            (*| 				  	                *)
   | TmConcat (t1, t2) ->
       TmConcat(subst x s t1, subst x s t2)
-  | TmTuple terms ->				                    (*| Addition for Tuple type terms (2.5)	*)
+  | TmTuple terms ->				                    (*--Addition for Tuple type terms (2.5)	*)
       TmTuple (List.map (fun t -> subst x s t) terms)   (*|                 					*)
   | TmTupleProj(t, pos) ->				                (*|					                    *)
       TmTupleProj(subst x s t, pos)                     (*|				                    	*)
-  | TmUnit ->                                           (*|  Addition for Unit type terms (2.9) *)
+  | TmUnit ->                                           (*--Addition for Unit type terms (2.9)  *)
       TmUnit                                            (*|                                     *)
-  | TmPrintNat t  ->
-      TmPrintNat (subst x s t)
-  | TmPrintString t ->
-      TmPrintString (subst x s t)
-  | TmPrintNewline t ->
-      TmPrintNewline (subst x s t)
-  | TmReadNat t ->
-      TmReadNat (subst x s t)
-  | TmReadString t ->
-      TmReadString (subst x s t)
+  | TmPrintNat t  ->                                    (*--Addition for IO operations          *)
+      TmPrintNat (subst x s t)                          (*|                                     *)
+  | TmPrintString t ->                                  (*|                                     *)
+      TmPrintString (subst x s t)                       (*|                                     *)
+  | TmPrintNewline t ->                                 (*|                                     *)
+      TmPrintNewline (subst x s t)                      (*|                                     *)
+  | TmReadNat t ->                                      (*|                                     *)
+      TmReadNat (subst x s t)                           (*|                                     *)
+  | TmReadString t ->                                   (*|                                     *)
+      TmReadString (subst x s t)                        (*|                                     *)
 ;;
 
 
@@ -500,7 +500,7 @@ let rec eval1 vctx tm = match tm with
       TmLetIn (x, t1', t2) 
       
     (* E-FixBeta *)
-  | TmFix (TmAbs (x, _, t2)) ->             (* | Addition for Fix term (2.2) 		               *)
+  | TmFix (TmAbs (x, _, t2)) ->             (*--Addition for Fix term (2.2) 		                        *)
       subst x tm t2                         (* | Fix of an abstraction is evaluated as the substituted term *)
                                             (* |                                                            *)
     (* E-Fix *)                             (* |                                                            *)
@@ -509,7 +509,7 @@ let rec eval1 vctx tm = match tm with
       TmFix t1'                             (* |                                                            *)
 
     (*E-Concat1*)
-  | TmConcat (TmString v1, TmString v2) ->  (* | Addition for String type (2.3)                        *)
+  | TmConcat (TmString v1, TmString v2) ->  (*--Addition for String type (2.3)                        *)
       TmString (v1 ^ v2)                    (* | Given two strings returns the concatenation           *)
                                             (* |                                                       *)
   (*E-Concat2*)                             (* |                                                       *)
@@ -523,17 +523,17 @@ let rec eval1 vctx tm = match tm with
     TmConcat (t1', t2)                      (* |                                                       *)
 
     (*E- ProjTuple*)
-  | TmTupleProj (t, pos) when (isval t) -> (match t with
-      TmTuple terms -> (try List.nth terms (pos - 1) with 
-        _ -> raise NoRuleApplies)  
-      | _ -> raise (Type_error "Term is not a tuple")
-  )
-
-      (*E-Proj*)
-  | TmTupleProj (t1, pos) ->                                    (* | Addition for Tuple type (2.5) 		                        *)
+  | TmTupleProj (t, pos) when (isval t) -> (match t with        (* --Addition for Tuple type (2.5) 		                        *)
+          TmTuple terms -> (try List.nth terms (pos - 1) with   (* |                                	                        *)
+        _ -> raise NoRuleApplies)                               (* |                                	                        *)
+      | _ -> raise (Type_error "Term is not a tuple")           (* |                                	                        *)
+  )                                                             (* | For tuple projections, it's evaluated the tuple and passed *)
+                                                                (* |  as parameter to another projection eval                   *)
+      (*E-Proj*)                                                (* |                            		                        *)
+  | TmTupleProj (t1, pos) ->                                    (* |                            		                        *)
       let t1' = eval1 vctx t1 in                                (* |                            		                        *)
-      TmTupleProj(t1', pos)                                     (* | For tuple projections, it's evaluated the tuple and passed *)
-                                                                (* | as parameter to another projection eval      		        *)
+      TmTupleProj(t1', pos)                                     (* |                                                            *)
+                                                                (* |       		                                                *)
     (*E-Tuple*)                                                 (* |                            		                        *)
     | TmTuple terms ->                                          (* |                             		                        *)
         let rec evaluate terms = (match terms with              (* | For tuples, all individual terms are evaluated recursively *)
@@ -546,7 +546,7 @@ let rec eval1 vctx tm = match tm with
 
       
   
-  | TmPrintNat TmZero  ->                           (* | Additions for Tuple type (2.5)                          *)
+  | TmPrintNat TmZero  ->                           (* | Additions for IO (2.10)                                 *)
         (print_int 0; print_string("\n"); TmUnit)   (* |                                                         *)
                                                     (* | When print_nat is evaluated, first match ocurs at TmZero*)
   | TmPrintNat (TmSucc t)  ->                       (* | "0" prints out in that case.                            *)
@@ -556,7 +556,7 @@ let rec eval1 vctx tm = match tm with
       | _ -> ()                                     (* | - 0 is printed if its value is 0                        *)
       in f 1 t; print_string("\n"); TmUnit)         (* | - Next number is printed if it's a successor            *)
                                                     (* | - Previous number is printed if it's a predecessor      *)
-                                  		      (* |                                                         *) 
+                                  		            (* |                                                         *) 
   | TmPrintNat t  ->                                (* | If it matchs any other term, the inner expression       *)
         let t' = eval1 vctx t in TmPrintNat t'      (* | is evaluated for looking for coincidences               *)
                                                     (* |                                                         *)
