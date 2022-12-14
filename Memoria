@@ -13,7 +13,7 @@ Formal exposition with execution samples of new interpreter functionalities.
 	true;;
 	    ↑
 
-1.2: "Pretty-printer"
+
 
 2.1: Internal fixed point combinator implementation
 
@@ -52,7 +52,8 @@ Formal exposition with execution samples of new interpreter functionalities.
 
 
 	***Currently, this functionality is designed to override any id that is assigned twice. (...)
-			
+
+
 
 
 2.3: String type
@@ -66,6 +67,7 @@ Formal exposition with execution samples of new interpreter functionalities.
 
 	Formatting: 	concat [str1] [str2]
 	Example:	concat "straw" "berry";;
+
 
 
 
@@ -84,11 +86,6 @@ Formal exposition with execution samples of new interpreter functionalities.
 		Example: x = {false, succ (succ 0), "Hello"}.2;; 
 
 
-2.6: Registers
-
-2.7: Lists
-
-2.8: Subtyping
 
 2.9: Unit type
 
@@ -123,14 +120,24 @@ Formal exposition with execution samples of new interpreter functionalities.
 	As an upgrade to the system adaptability and usefulness, a bunch of input-output functionalities have been added, such as the following:
 	
 		print_nat: Prints a Nat term on the console.
+		
+			print_nat 5
 	
 		print_string: Prints a String term on the console.
+		
+			print_string "Hi"
 	
 		print_newline: Prints a newline character, leaping one line.
+		
+			print_newline unit
 	
-		read_nat: Given a natural number, assigns it to a Nat term.
+		read_nat: Given a natural number, entered by command line, assigns it to a Nat term.
+		
+			read_nat unit
 	
-		read_string: Given a string, assigns it to a String term.
+		read_string: Given a string, entered by command line, assigns it to a String term.
+		
+			read_string unit
 	
 	Batch compiler mode:
 	
@@ -138,37 +145,5 @@ Formal exposition with execution samples of new interpreter functionalities.
 		With "run" users now have the posibility to evaluate whole text files with any desired number of terms via command-line.
 		
 		Usage:
-			run [text file]
+			./run [text file]
 		
-
-
-
-
--Technical Manual
-Which modules from the original code have been changed and what type of adjustements have been made to achieve the implementation of the new functionalities
-
-
-1.1: Multi-line expressions recognition
-
-1.2: "Pretty-printer"
-
-2.1: Internal fixed point implementation
-
-2.2: Global definition context
-
-2.3: String type
-
-2.4: Pair type
-
-2.5: Tuple type
-
-2.6: Registers
-
-2.7: Lists
-
-2.8: Subtyping
-
-2.9: Unit type
-
-2.10: I/O Operations
-
